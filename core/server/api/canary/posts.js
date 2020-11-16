@@ -1,7 +1,10 @@
 const models = require('../../models');
-const common = require('../../lib/common');
-const urlUtils = require('../../lib/url-utils');
-const allowedIncludes = ['tags', 'authors', 'authors.roles'];
+const {i18n} = require('../../lib/common');
+const errors = require('@tryghost/errors');
+const urlUtils = require('../../../shared/url-utils');
+const {mega} = require('../../services/mega');
+const membersService = require('../../services/members');
+const allowedIncludes = ['tags', 'authors', 'authors.roles', 'email'];
 const unsafeAttrs = ['status', 'authors', 'visibility'];
 
 module.exports = {
@@ -69,8 +72,8 @@ module.exports = {
             return models.Post.findOne(frame.data, frame.options)
                 .then((model) => {
                     if (!model) {
-                        throw new common.errors.NotFoundError({
-                            message: common.i18n.t('errors.api.posts.postNotFound')
+                        throw new errors.NotFoundError({
+                            message: i18n.t('errors.api.posts.postNotFound')
                         });
                     }
 
@@ -84,6 +87,7 @@ module.exports = {
         headers: {},
         options: [
             'include',
+            'formats',
             'source'
         ],
         validation: {
@@ -118,7 +122,11 @@ module.exports = {
         options: [
             'include',
             'id',
+            'formats',
             'source',
+            'email_recipient_filter',
+            'send_email_when_published',
+            'force_rerender',
             // NOTE: only for internal context
             'forUpdate',
             'transacting'
@@ -133,35 +141,66 @@ module.exports = {
                 },
                 source: {
                     values: ['html']
+                },
+                email_recipient_filter: {
+                    values: ['none', 'free', 'paid', 'all']
+                },
+                send_email_when_published: {
+                    values: [true, false]
                 }
             }
         },
         permissions: {
             unsafeAttrs: unsafeAttrs
         },
-        query(frame) {
-            return models.Post.edit(frame.data.posts[0], frame.options)
-                .then((model) => {
-                    if (
-                        model.get('status') === 'published' && model.wasChanged() ||
-                        model.get('status') === 'draft' && model.previous('status') === 'published'
-                    ) {
-                        this.headers.cacheInvalidate = true;
-                    } else if (
-                        model.get('status') === 'draft' && model.previous('status') !== 'published' ||
-                        model.get('status') === 'scheduled' && model.wasChanged()
-                    ) {
-                        this.headers.cacheInvalidate = {
-                            value: urlUtils.urlFor({
-                                relativeUrl: urlUtils.urlJoin('/p', model.get('uuid'), '/')
-                            })
-                        };
-                    } else {
-                        this.headers.cacheInvalidate = false;
-                    }
+        async query(frame) {
+            /**Check host limits for members when send email is true**/
+            if ((frame.options.email_recipient_filter && frame.options.email_recipient_filter !== 'none') || frame.options.send_email_when_published) {
+                await membersService.checkHostLimit();
+            }
 
-                    return model;
-                });
+            let model = await models.Post.edit(frame.data.posts[0], frame.options);
+
+            if (!frame.options.email_recipient_filter && frame.options.send_email_when_published) {
+                frame.options.email_recipient_filter = model.get('visibility') === 'paid' ? 'paid' : 'all';
+                model = await models.Post.edit(frame.data.posts[0], frame.options);
+            }
+
+            /**Handle newsletter email */
+            if (model.get('email_recipient_filter') !== 'none') {
+                const postPublished = model.wasChanged() && (model.get('status') === 'published') && (model.previous('status') !== 'published');
+                if (postPublished) {
+                    let postEmail = model.relations.email;
+
+                    if (!postEmail) {
+                        const email = await mega.addEmail(model, frame.options);
+                        model.set('email', email);
+                    } else if (postEmail && postEmail.get('status') === 'failed') {
+                        const email = await mega.retryFailedEmail(postEmail);
+                        model.set('email', email);
+                    }
+                }
+            }
+
+            /**Handle cache invalidation */
+            if (
+                model.get('status') === 'published' && model.wasChanged() ||
+                model.get('status') === 'draft' && model.previous('status') === 'published'
+            ) {
+                this.headers.cacheInvalidate = true;
+            } else if (
+                model.get('status') === 'draft' && model.previous('status') !== 'published' ||
+                model.get('status') === 'scheduled' && model.wasChanged()
+            ) {
+                this.headers.cacheInvalidate = {
+                    value: urlUtils.urlFor({
+                        relativeUrl: urlUtils.urlJoin('/p', model.get('uuid'), '/')
+                    })
+                };
+            } else {
+                this.headers.cacheInvalidate = false;
+            }
+            return model;
         }
     },
 
@@ -191,11 +230,11 @@ module.exports = {
             frame.options.require = true;
 
             return models.Post.destroy(frame.options)
-                .return(null)
+                .then(() => null)
                 .catch(models.Post.NotFoundError, () => {
-                    throw new common.errors.NotFoundError({
-                        message: common.i18n.t('errors.api.posts.postNotFound')
-                    });
+                    return Promise.reject(new errors.NotFoundError({
+                        message: i18n.t('errors.api.posts.postNotFound')
+                    }));
                 });
         }
     }
