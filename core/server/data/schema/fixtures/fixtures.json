@@ -33,6 +33,10 @@
                     "description": "Contributors"
                 },
                 {
+                    "name": "Planseditor",
+                    "description": "Plans Editor"
+                },
+                {
                     "name": "Owner",
                     "description": "Blog Owner"
                 },
@@ -706,6 +710,18 @@
                     "snippet": ["browse", "read"]
                 },
                 "Contributor": {
+                    "post": ["browse", "read", "add"],
+                    "setting": ["browse", "read"],
+                    "slug": "all",
+                    "tag": ["browse", "read"],
+                    "user": ["browse", "read"],
+                    "role": ["browse"],
+                    "theme": ["browse"],
+                    "email_preview": "read",
+                    "email": "read",
+                    "snippet": ["browse", "read"]
+                },
+                "Planseditor": {
                     "post": ["browse", "read", "add"],
                     "setting": ["browse", "read"],
                     "slug": "all",
