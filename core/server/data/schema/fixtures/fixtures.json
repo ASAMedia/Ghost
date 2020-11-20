@@ -37,6 +37,18 @@
                     "description": "Plans Editor"
                 },
                 {
+                    "name": "Planseditor Contributor",
+                    "description": "Plans Editor Contributor"
+                },
+                {
+                    "name": "Planseditor Author",
+                    "description": "Plans Editor Contributor"
+                },
+                {
+                    "name": "Planseditor Editor",
+                    "description": "Plans Editor Contributor"
+                },
+                {
                     "name": "Owner",
                     "description": "Blog Owner"
                 },
@@ -474,7 +486,7 @@
                     "name": "Ghost",
                     "email": "ghost-author@example.com",
                     "status": "active",
-                    "roles": ["Author"],
+                    "roles": ["Planseditor Contributor"],
                     "twitter": "ghost",
                     "facebook": "ghost",
                     "location": "The Internet",
@@ -722,6 +734,10 @@
                     "snippet": ["browse", "read"]
                 },
                 "Planseditor": {
+                    "setting": ["browse", "read"],
+                    "user": ["read"]
+                },
+                "Planseditor Contributor": {
                     "post": ["browse", "read", "add"],
                     "setting": ["browse", "read"],
                     "slug": "all",
@@ -732,6 +748,32 @@
                     "email_preview": "read",
                     "email": "read",
                     "snippet": ["browse", "read"]
+                },
+                "Planseditor Author": {
+                    "post": ["browse", "read", "add"],
+                    "setting": ["browse", "read"],
+                    "slug": "all",
+                    "tag": ["browse", "read", "add"],
+                    "user": ["browse", "read"],
+                    "role": ["browse"],
+                    "theme": ["browse"],
+                    "email_preview": "read",
+                    "email": "read",
+                    "snippet": ["browse", "read"]
+                },
+                "Planseditor Editor": {
+                    "notification": "all",
+                    "post": "all",
+                    "setting": ["browse", "read"],
+                    "slug": "all",
+                    "tag": "all",
+                    "user": "all",
+                    "role": "all",
+                    "invite": "all",
+                    "theme": ["browse"],
+                    "email_preview": "all",
+                    "email": "all",
+                    "snippet": "all"
                 }
             }
         },
