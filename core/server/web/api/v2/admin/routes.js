@@ -5,6 +5,11 @@ const apiMw = require('../../middleware');
 
 const shared = require('../../../shared');
 
+const sessionMw= require('../../../../services/auth/session');
+const expressSessionMw= require('../../../../services/auth/session/express-session');
+const fetch=require('node-fetch');
+const bodyParser=require('body-parser');
+
 module.exports = function apiRoutes() {
     const router = express.Router('v2 admin');
 
@@ -14,6 +19,63 @@ module.exports = function apiRoutes() {
     router.use(apiMw.cors);
 
     const http = apiv2.http;
+
+    // ## GraphQl Auth
+    router.post('/vertretungsplan/graphql', async (req, res, next)=>{
+        req.session= await expressSessionMw.getSession(req, res);
+        next();
+    }, sessionMw.authenticate, async (req, res)=>{
+        if (!req.user) {
+            return res.sendStatus(401);
+        }
+        if (req.user.id!=='5951f5fca366002ebd5dbef7') {
+            return res.sendStatus(401);
+        }
+        //return res.sendStatus(200);
+        const data = await fetch('https://vp.lyonel-feininger-gymnasium.de/api/',{
+            method: 'post',
+            body: JSON.stringify(req.body),
+            headers: {
+                'Content-Type': req.headers['content-type'],
+            }
+        }).then(res=>res.text());
+        res.contentType('application/json');
+        res.send(data);
+    });
+    // ## Exporter Auth
+    router.get('/vertretungsplan/export', async (req, res, next)=>{
+        req.session= await expressSessionMw.getSession(req, res);
+        next();
+    }, sessionMw.authenticate, async (req, res)=>{
+        if (!req.user) {
+            return res.sendStatus(401);
+        }
+        if (req.user.id!=='5951f5fca366002ebd5dbef7') {
+            return res.sendStatus(401);
+        }
+                   //https://vp.lyonel-feininger-gymnasium.de/export/?plan=ck0tg2e3d00000iqj5bk4a6pc&date=2020-12-24&type=pdf
+        console.log('https://vp.lyonel-feininger-gymnasium.de/export/?plan=ck0tg2e3d00000iqj5bk4a6pc&date=2020-12-25&type=pdf');
+        const url=`https://vp.lyonel-feininger-gymnasium.de/export/?plan=${req.query.plan}&date=${req.query.date}&type=${req.query.type}`;
+        console.log(url);
+        const data = await fetch(url,{
+            method: 'post',
+            headers: {
+            }
+        });
+        /* const array=await data.arrayBuffer();
+        res.writeHead(200, {
+            'Content-Type': 'application/pdf',
+        });
+        const download = Buffer.from(array, 'base64');
+        res.end(download); */
+
+        const array=await data.arrayBuffer();
+        res.writeHead(200, {
+            'Content-Type': 'application/json',
+        });
+        const download = Buffer.from(array, 'base64');
+        res.end(download);
+    });
 
     // ## Public
     router.get('/site', mw.publicAdminApi, http(apiv2.site.read));
