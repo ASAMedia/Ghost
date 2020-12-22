@@ -8,7 +8,7 @@ const shared = require('../../../shared');
 const sessionMw= require('../../../../services/auth/session');
 const expressSessionMw= require('../../../../services/auth/session/express-session');
 const fetch=require('node-fetch');
-const bodyParser=require('body-parser');
+require("dotenv").config();
 
 module.exports = function apiRoutes() {
     const router = express.Router('v2 admin');
@@ -31,12 +31,12 @@ module.exports = function apiRoutes() {
         if (req.user.id!=='5951f5fca366002ebd5dbef7') {
             return res.sendStatus(401);
         }
-        //return res.sendStatus(200);
-        const data = await fetch('https://vp.lyonel-feininger-gymnasium.de/api/',{
+        const data = await fetch(process.env.VP_API_ENDPOINT,{
             method: 'post',
             body: JSON.stringify(req.body),
             headers: {
                 'Content-Type': req.headers['content-type'],
+                authorization: `Bearer ${process.env.AUTH_EDIT_TOKEN}`
             }
         }).then(res=>res.text());
         res.contentType('application/json');
@@ -53,13 +53,11 @@ module.exports = function apiRoutes() {
         if (req.user.id!=='5951f5fca366002ebd5dbef7') {
             return res.sendStatus(401);
         }
-                   //https://vp.lyonel-feininger-gymnasium.de/export/?plan=ck0tg2e3d00000iqj5bk4a6pc&date=2020-12-24&type=pdf
-        console.log('https://vp.lyonel-feininger-gymnasium.de/export/?plan=ck0tg2e3d00000iqj5bk4a6pc&date=2020-12-25&type=pdf');
-        const url=`https://vp.lyonel-feininger-gymnasium.de/export/?plan=${req.query.plan}&date=${req.query.date}&type=${req.query.type}`;
-        console.log(url);
+        const url=`${process.env.VP_EXPORT_ENDPOINT}?plan=${req.query.plan}&date=${req.query.date}&type=${req.query.type}`;
         const data = await fetch(url,{
             method: 'post',
             headers: {
+                authorization: `Bearer ${process.env.WEB_ACCESS_TOKEN}`
             }
         });
         /* const array=await data.arrayBuffer();
