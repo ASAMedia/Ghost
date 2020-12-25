@@ -2,7 +2,7 @@ const express = require('../../../../../shared/express');
 const apiv2 = require('../../../../api/v2');
 const mw = require('./middleware');
 const apiMw = require('../../middleware');
-
+var request = require('request');
 const shared = require('../../../shared');
 
 const sessionMw= require('../../../../services/auth/session');
@@ -25,10 +25,10 @@ module.exports = function apiRoutes() {
         req.session= await expressSessionMw.getSession(req, res);
         next();
     }, sessionMw.authenticate, async (req, res)=>{
-        if (!req.user) {
+        if (!req.headers.isplanseditor) {
             return res.sendStatus(401);
         }
-        if (req.user.id!=='5951f5fca366002ebd5dbef7') {
+        if (req.headers.isplanseditor!=='true') {
             return res.sendStatus(401);
         }
         const data = await fetch(process.env.VP_API_ENDPOINT,{
@@ -50,6 +50,7 @@ module.exports = function apiRoutes() {
         if (!req.user) {
             return res.sendStatus(401);
         }
+        console.log(req.headers.isplanseditor);
         if (req.user.id!=='5951f5fca366002ebd5dbef7') {
             return res.sendStatus(401);
         }

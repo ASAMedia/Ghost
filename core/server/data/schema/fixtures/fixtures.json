@@ -486,7 +486,7 @@
                     "name": "Ghost",
                     "email": "ghost-author@example.com",
                     "status": "active",
-                    "roles": ["Planseditor Contributor"],
+                    "roles": ["Contributor"],
                     "twitter": "ghost",
                     "facebook": "ghost",
                     "location": "The Internet",
