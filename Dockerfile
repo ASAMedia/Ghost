@@ -15,4 +15,4 @@ RUN npm run setup
 
 EXPOSE 2368
 
-CMD [ "npm", "run", "dev" ]
+CMD [ "npm", "run", "start" ]
