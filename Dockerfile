@@ -12,6 +12,7 @@ COPY package*.json ./
 COPY . .
 
 #RUN npm run setup
+RUN yarn install --check-files
 RUN yarn setup
 
 EXPOSE 2368
