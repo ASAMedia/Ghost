@@ -17,4 +17,4 @@ RUN yarn setup
 
 EXPOSE 2368
 
-CMD [ "npm","run" ,"dev" ]
+CMD [ "yarn","start"]
