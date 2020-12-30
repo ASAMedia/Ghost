@@ -12,8 +12,12 @@ COPY package*.json ./
 COPY . .
 
 #RUN npm run setup
+RUN npm install -g grunt-cli --force
 RUN yarn install --check-files
 RUN yarn setup
+RUN grunt build
+
+
 
 EXPOSE 2368
 
