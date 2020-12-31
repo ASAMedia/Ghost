@@ -4,3 +4,8 @@
 [submodule "core/client"]
 	path = core/client
 	url = https://github.com/ASAMedia/Ghost-Admin-LFG.git
+	branch = master
+[submodule "Ghost-Admin-LFG"]
+	path = Ghost-Admin-LFG
+	url = https://github.com/ASAMedia/Ghost-Admin-LFG.git
+	branch = master
