@@ -1,0 +1,15 @@
+version: '3.1'
+
+services:
+
+  lfg-ghost:
+    build: .
+    container_name: lfg-ghost
+    restart: always
+    ports:
+      - 8080:2368
+    volumes:
+      -  /home/axel/Schreibtisch/Projekte/Ghostwithcustomadminui/Ghost_default_docker/:/var/lib/ghost/content
+      -  /home/axel/Schreibtisch/Projekte/Ghostwithcustomadminui/.env:/var/lib/ghost/.env
+    environment:
+      url: http://192.168.0.73:8080
