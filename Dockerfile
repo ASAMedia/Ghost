@@ -10,7 +10,7 @@ RUN set -eux; \
 	\
 	chmod 775 "$GHOST_CONTENT";\
 	chown node:node "$GHOST_CONTENT"; \
-	gosu node ghost update --zip /var/lib/Ghost-3.37.1.zip; \
+	gosu node ghost update --force --zip /var/lib/Ghost-3.37.1.zip; \
 	\
 	gosu node yarn cache clean; \
 	gosu node npm cache clean --force; \
