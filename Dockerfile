@@ -1,24 +1,19 @@
-FROM node:12-alpine
+# https://docs.ghost.org/faq/node-versions/
+# https://github.com/nodejs/LTS
+# https://github.com/TryGhost/Ghost/blob/3.3.0/package.json#L38
+FROM ghost:3.36.0
+ENV GHOST_INSTALL /var/lib/ghost
+ENV GHOST_CONTENT /var/lib/ghost/content
+COPY ./.dist/release/ /var/lib
+RUN set -eux; \
+	cd "$GHOST_INSTALL"; \
+	\
+	chmod 775 "$GHOST_CONTENT";\
+	chown node:node "$GHOST_CONTENT"; \
+	gosu node ghost update --zip /var/lib/Ghost-3.37.1.zip; \
+	\
+	gosu node yarn cache clean; \
+	gosu node npm cache clean --force; \
+	npm cache clean --force; \
+	rm -rv /tmp/yarn* /tmp/v8*
 
-# Create app directory
-WORKDIR /usr/src/app
-
-# Install app dependencies
-# A wildcard is used to ensure both package.json AND package-lock.json are copied
-# where available ([email protected]+)
-COPY package*.json ./
-
-# Bundle app source
-COPY . .
-
-#RUN npm run setup
-RUN npm install -g grunt-cli --force
-RUN yarn install --check-files
-RUN yarn setup
-RUN grunt build
-
-
-
-EXPOSE 2368
-
-CMD [ "yarn","start"]
