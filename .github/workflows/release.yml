@@ -7,8 +7,6 @@ jobs:
   automate:
     runs-on: ubuntu-18.04
     env:
-      RELEASE_TOKEN: ${{ secrets.RELEASE_TOKEN }}
-      NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
       FORCE_COLOR: 1
     steps:
       - uses: actions/checkout@v2
@@ -20,7 +18,6 @@ jobs:
           node-version: '12.18.0'
 
       - run: yarn
-      - run: grunt release --skip-tests
-      - run: npm config set //registry.npmjs.org/:_authToken=$NODE_AUTH_TOKEN
-      - run: npm publish
+      - run: yarn setup
+      - run: grunt release --force
       - uses: tryghost/action-ghost-release@master
