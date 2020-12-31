@@ -47,11 +47,10 @@ module.exports = function apiRoutes() {
         req.session= await expressSessionMw.getSession(req, res);
         next();
     }, sessionMw.authenticate, async (req, res)=>{
-        if (!req.user) {
+        if (!req.headers.isplanseditor) {
             return res.sendStatus(401);
         }
-        console.log(req.headers.isplanseditor);
-        if (req.user.id!=='5951f5fca366002ebd5dbef7') {
+        if (req.headers.isplanseditor!=='true') {
             return res.sendStatus(401);
         }
         const url=`${process.env.VP_EXPORT_ENDPOINT}?plan=${req.query.plan}&date=${req.query.date}&type=${req.query.type}`;
