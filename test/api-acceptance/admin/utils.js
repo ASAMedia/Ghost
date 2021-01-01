@@ -24,7 +24,7 @@ const expectedProperties = {
 
     action: ['id', 'resource_type', 'actor_type', 'event', 'created_at', 'actor'],
 
-    config: ['version', 'environment', 'database', 'mail', 'labs', 'clientExtensions', 'enableDeveloperExperiments', 'useGravatar', 'stripeDirect'],
+    config: ['version', 'environment', 'database', 'mail', 'labs', 'clientExtensions', 'enableDeveloperExperiments', 'useGravatar', 'stripeDirect', 'emailAnalytics'],
 
     post: _(schema.posts)
         .keys()
@@ -115,6 +115,9 @@ const expectedProperties = {
     email: _(schema.emails)
         .keys(),
     email_preview: ['html', 'subject', 'plaintext'],
+    email_recipient: _(schema.email_recipients)
+        .keys()
+        .filter(key => key.indexOf('@@') === -1),
     snippet: _(schema.snippets).keys()
 };
 
