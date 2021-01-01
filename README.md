@@ -1,3 +1,28 @@
+<p align="left">
+  <a href="https://lyonel-feininger-gymnasium.de/" style="float: left">
+    <img src="https://lyonel-feininger-gymnasium.de/content/images/2020/12/Schul-LOGO-transparent-rand-2.png" width="100px" alt="Ghost" />
+  </a>
+      <a><h1>Custom Ghost environment for the Lyonel-Feininger-Gymnasium Buttelstedt/Mellingen</h1></a>
+</p>
+
+# Custom Setup Guide
+Setup the environment and all modules 
+
+```
+yarn setup
+``` 
+
+Build the release zip file (./.dist/release/Ghost-x.xx.x.zip)
+```
+grunt release
+```
+Build and run the Docker image with docker-compose
+```
+docker-compose build --no-cache
+docker-compose up -d
+```
+
+# Original Guide
 <p align="center">
   <a href="https://ghost.org">
     <img src="https://user-images.githubusercontent.com/120485/43974508-b64b2fe8-9cd2-11e8-8e58-707254b8817c.png" width="140px" alt="Ghost" />
