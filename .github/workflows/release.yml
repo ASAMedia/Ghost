@@ -24,8 +24,8 @@ jobs:
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: .dist/release/Ghost-3.40.2.zip
-          asset_name: Ghost-3.40.2.zip
+          file: .dist/release/Ghost-*
+          asset_name: $tag
           tag: ${{ github.ref }}
           overwrite: true
           body: "This is my release text"
