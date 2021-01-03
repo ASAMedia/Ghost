@@ -20,4 +20,4 @@ jobs:
       - run: yarn
       - run: yarn setup
       - run: grunt release --force
-      - uses: tryghost/action-ghost-release@master
+      - uses: asamedia/action-ghost-release@master
