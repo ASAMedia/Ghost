@@ -25,7 +25,6 @@ jobs:
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: .dist/release/Ghost-*
-          asset_name: $tag
           tag: ${{ github.ref }}
           overwrite: true
-          body: "This is my release text"
+          file_glob: true
