@@ -12,4 +12,4 @@ services:
       -  /home/axel/Schreibtisch/Projekte/Ghostwithcustomadminui/Ghost_default_docker/:/var/lib/ghost/content
       -  /home/axel/Schreibtisch/Projekte/Ghostwithcustomadminui/.env:/var/lib/ghost/.env
     environment:
-      url: http://192.168.0.73:8080
+      url: http://192.168.43.19:8080
