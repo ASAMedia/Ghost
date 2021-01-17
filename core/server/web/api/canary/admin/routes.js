@@ -214,6 +214,13 @@ module.exports = function apiRoutes() {
         http(apiCanary.images.upload)
     );
 
+    // ## Files
+    router.post('/files/upload',
+        mw.authAdminApi,
+        apiMw.upload.single('file'),
+        http(apiCanary.images.upload)
+    );
+
     // ## Invites
     router.get('/invites', mw.authAdminApi, http(apiCanary.invites.browse));
     router.get('/invites/:id', mw.authAdminApi, http(apiCanary.invites.read));

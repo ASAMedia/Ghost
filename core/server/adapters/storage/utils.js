@@ -26,7 +26,6 @@ exports.getLocalFileStoragePath = function getLocalFileStoragePath(imagePath) {
         '/',
         urlUtils.STATIC_IMAGE_URL_PREFIX)}`
     );
-
     if (imagePath.match(urlRegExp)) {
         return imagePath.replace(urlRegExp, '');
     } else if (imagePath.match(filePathRegExp)) {

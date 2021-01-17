@@ -51,6 +51,8 @@ exports.getContentPath = function getContentPath(type) {
     switch (type) {
     case 'images':
         return path.join(this.get('paths:contentPath'), 'images/');
+    case 'files':
+        return path.join(this.get('paths:contentPath'), 'files/');
     case 'themes':
         return path.join(this.get('paths:contentPath'), 'themes/');
     case 'adapters':

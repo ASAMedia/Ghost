@@ -58,9 +58,13 @@ class LocalFileStore extends StorageBase {
     save(image, targetDir) {
         let targetFilename;
 
+        if(!image.name){
+            targetDir = this.getTargetDir(config.getContentPath('files'));
+            image.name=image.originalname;
+        }
         // NOTE: the base implementation of `getTargetDir` returns the format this.storagePath/YYYY/MM
         targetDir = targetDir || this.getTargetDir(this.storagePath);
-
+        
         return this.getUniqueFileName(image, targetDir).then((filename) => {
             targetFilename = filename;
             return fs.mkdirs(targetDir);

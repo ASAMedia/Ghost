@@ -230,6 +230,13 @@ module.exports = function apiRoutes() {
         http(apiv2.images.upload)
     );
 
+    // ## Files
+    router.post('/files/upload',
+        mw.authAdminApi,
+        apiMw.upload.single('file'),
+        http(apiv2.images.upload)
+    );
+
     // ## Invites
     router.get('/invites', mw.authAdminApi, http(apiv2.invites.browse));
     router.get('/invites/:id', mw.authAdminApi, http(apiv2.invites.read));
