@@ -97,7 +97,9 @@ projectFilesBackup
 .tmp
 
 /core/server/data/export/exported*
+/files/*
 /content/tmp/*
+/content/files/*
 /content/data/*
 /content/logs/*
 /content/settings/*
