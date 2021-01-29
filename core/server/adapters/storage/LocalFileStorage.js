@@ -145,6 +145,47 @@ class LocalFileStore extends StorageBase {
         };
     }
 
+    serveFile() {
+        const {storagePath} = this;
+
+        return function serveStaticContent(req, res, next) {
+            const startedAtMoment = moment();
+            //req.path=req.path.substring(0, req.path.length - 1);
+            console.log(storagePath);
+            return serveStatic(
+                storagePath,
+                {
+                    maxAge: constants.ONE_YEAR_MS,
+                    fallthrough: false,
+                    onEnd: () => {
+                        logging.info('LocalFileStorage.serve', req.path, storagePath, moment().diff(startedAtMoment, 'ms') + 'ms');
+                    }
+                }
+            )(req, res, (err) => {
+                if (err) {
+                    if (err.statusCode === 404) {
+                        return next(new errors.NotFoundError({
+                            message: i18n.t('errors.errors.imageNotFound'),
+                            code: 'STATIC_FILE_NOT_FOUND',
+                            property: err.path
+                        }));
+                    }
+
+                    if (err.statusCode === 400) {
+                        return next(new errors.BadRequestError({err: err}));
+                    }
+
+                    if (err.statusCode === 403) {
+                        return next(new errors.NoPermissionError({err: err}));
+                    }
+
+                    return next(new errors.GhostError({err: err}));
+                }
+
+                next();
+            });
+        };
+    }
     /**
      * Not implemented.
      * @returns {Promise.<*>}
