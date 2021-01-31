@@ -1,6 +1,8 @@
 const fs = require('fs');
 const path = require('path');
 
+const config = require('../../../../shared/config');
+
 function getAllFiles(dirPath, arrayOfFiles){
   files = fs.readdirSync(dirPath);
     
@@ -10,7 +12,11 @@ function getAllFiles(dirPath, arrayOfFiles){
     if (fs.statSync(dirPath + '/' + file).isDirectory()) {
       arrayOfFiles = getAllFiles(dirPath + '/' + file, arrayOfFiles);
     } else {
-      arrayOfFiles.push('/'+path.join(dirPath, '/', file));
+      let element=Object();
+      element.fullLink=`${config.get('url')}/${path.join(dirPath, '/', file)}`;
+      element.extension= file.split('.').pop();
+      element.name=file;
+      arrayOfFiles.push(element);
     }
   })
 
