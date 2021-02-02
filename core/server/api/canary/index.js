@@ -90,6 +90,10 @@ module.exports = {
     get images() {
         return shared.pipeline(require('./images'), localUtils);
     },
+    
+    get timetables() {
+        return shared.pipeline(require('./timetables'), localUtils);
+    },
 
     get tags() {
         return shared.pipeline(require('./tags'), localUtils);

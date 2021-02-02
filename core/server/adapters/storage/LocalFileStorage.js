@@ -59,11 +59,11 @@ class LocalFileStore extends StorageBase {
         let targetFilename;
         if(!image.name){
             targetDir = this.getTargetDir(config.getContentPath('files'));
-            image.name=image.originalname;
+            image.name=image.originalname.toLowerCase().replace(/[^a-z0-9-+_.*=]/g, '');
         }
-        if(image.name==='timetable'){
+        else if(image.name==='timetable'){
             targetDir = this.getTargetDir(config.getContentPath('timetables'));
-            image.name=image.originalname;
+            image.name=image.originalname.toLowerCase().replace(/[^a-z0-9-+_.*=]/g, '');
         }
         // NOTE: the base implementation of `getTargetDir` returns the format this.storagePath/YYYY/MM
         targetDir = targetDir || this.getTargetDir(this.storagePath);
@@ -149,18 +149,16 @@ class LocalFileStore extends StorageBase {
     }
 
     serveFile(categorie) {
-        let storagePath = this;
-        if (categorie==='timetables') {
-            storagePath = `${path.dirname(require.main.filename)}/content/timetables`;
-        }
-        else if (categorie==='files') {
-            storagePath = `${path.dirname(require.main.filename)}/content/files`;
-        }
-        
+        let {storagePath} = this;
 
         return function serveStaticContent(req, res, next) {
+            if (categorie==='timetables') {
+                storagePath=`${path.dirname(require.main.filename)}/content/timetables`;
+            }
+            else if (categorie==='files') {
+                storagePath=`${path.dirname(require.main.filename)}/content/files`;
+            }
             const startedAtMoment = moment();
-            console.log(storagePath);
             return serveStatic(
                 storagePath,
                 {

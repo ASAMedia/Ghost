@@ -117,10 +117,10 @@ module.exports = function setupSiteApp(options = {}) {
     siteApp.use('/content/timetables',storage.getStorage().serveFile('timetables'));
 
     //Serve files uploaded by user
-    siteApp.get('/content/api/files/listAll', mw.getAllFiles);
+    siteApp.get('/content/api/files/listall', mw.getAllFiles);
 
     //Serve timetables uploaded by user
-    siteApp.get('/content/api/timetable/listAll', mw.getAllFiles);
+    siteApp.get('/content/api/timetable/listall', mw.getAllFiles);
    
     // @TODO find this a better home
     // We do this here, at the top level, because helpers require so much stuff.

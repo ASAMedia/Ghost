@@ -226,7 +226,7 @@ module.exports = function apiRoutes() {
     router.post('/timetable/upload',
         mw.authAdminApi,
         apiMw.upload.single('file'),
-        http(apiv2.timetables.upload)
+        http(apiCanary.timetables.upload)
     );
 
     // ## Invites

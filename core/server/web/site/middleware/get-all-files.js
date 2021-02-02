@@ -25,10 +25,10 @@ function getAllFiles(dirPath, arrayOfFiles){
 }
 
 module.exports = function (req, res, next) {
-  if(req.path==='/content/api/files/listAll/'){
+  if(req.path==='/content/api/files/listall/'){
     return res.send(getAllFiles('./content/files'));
   }
-  if(req.path==='/content/api/timetable/listAll/'){
+  if(req.path==='/content/api/timetable/listall/'){
     return res.send(getAllFiles('./content/timetables'));
   }
   next()
