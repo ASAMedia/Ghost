@@ -100,6 +100,7 @@ projectFilesBackup
 /files/*
 /content/tmp/*
 /content/files/*
+/content/timetables/*
 /content/data/*
 /content/logs/*
 /content/settings/*

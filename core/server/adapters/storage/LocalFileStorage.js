@@ -57,9 +57,12 @@ class LocalFileStore extends StorageBase {
      */
     save(image, targetDir) {
         let targetFilename;
-
         if(!image.name){
             targetDir = this.getTargetDir(config.getContentPath('files'));
+            image.name=image.originalname;
+        }
+        if(image.name==='timetable'){
+            targetDir = this.getTargetDir(config.getContentPath('timetables'));
             image.name=image.originalname;
         }
         // NOTE: the base implementation of `getTargetDir` returns the format this.storagePath/YYYY/MM
@@ -145,12 +148,18 @@ class LocalFileStore extends StorageBase {
         };
     }
 
-    serveFile() {
-        const {storagePath} = this;
+    serveFile(categorie) {
+        let storagePath = this;
+        if (categorie==='timetables') {
+            storagePath = `${path.dirname(require.main.filename)}/content/timetables`;
+        }
+        else if (categorie==='files') {
+            storagePath = `${path.dirname(require.main.filename)}/content/files`;
+        }
+        
 
         return function serveStaticContent(req, res, next) {
             const startedAtMoment = moment();
-            //req.path=req.path.substring(0, req.path.length - 1);
             console.log(storagePath);
             return serveStatic(
                 storagePath,
@@ -158,7 +167,7 @@ class LocalFileStore extends StorageBase {
                     maxAge: constants.ONE_YEAR_MS,
                     fallthrough: false,
                     onEnd: () => {
-                        logging.info('LocalFileStorage.serve', req.path, storagePath, moment().diff(startedAtMoment, 'ms') + 'ms');
+                        logging.info('LocalFileStorage.serve', req.path, moment().diff(startedAtMoment, 'ms') + 'ms');
                     }
                 }
             )(req, res, (err) => {

@@ -110,11 +110,17 @@ module.exports = function setupSiteApp(options = {}) {
     // Serve blog images using the storage adapter
     siteApp.use(STATIC_IMAGE_URL_PREFIX, mw.handleImageSizes, storage.getStorage().serve());
 
-    // Serve blog files using the storage adapter
-    siteApp.use('/content/files',storage.getStorage().serveFile());
+    // Serve document files using the storage adapter
+    siteApp.use('/content/files',storage.getStorage().serveFile('files'));
+
+    // Serve timetable files using the storage adapter
+    siteApp.use('/content/timetables',storage.getStorage().serveFile('timetables'));
 
     //Serve files uploaded by user
     siteApp.get('/content/api/files/listAll', mw.getAllFiles);
+
+    //Serve timetables uploaded by user
+    siteApp.get('/content/api/timetable/listAll', mw.getAllFiles);
    
     // @TODO find this a better home
     // We do this here, at the top level, because helpers require so much stuff.

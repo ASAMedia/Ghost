@@ -1,6 +1,7 @@
 const express = require('../../../../../shared/express');
 const apiCanary = require('../../../../api/canary');
 const apiMw = require('../../middleware');
+const apiv2 = require('../../../../api/v2');
 const mw = require('./middleware');
 
 const shared = require('../../../shared');
@@ -219,6 +220,13 @@ module.exports = function apiRoutes() {
         mw.authAdminApi,
         apiMw.upload.single('file'),
         http(apiCanary.images.upload)
+    );
+
+    // ## Timetables
+    router.post('/timetable/upload',
+        mw.authAdminApi,
+        apiMw.upload.single('file'),
+        http(apiv2.timetables.upload)
     );
 
     // ## Invites

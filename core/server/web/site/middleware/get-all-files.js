@@ -12,8 +12,9 @@ function getAllFiles(dirPath, arrayOfFiles){
     if (fs.statSync(dirPath + '/' + file).isDirectory()) {
       arrayOfFiles = getAllFiles(dirPath + '/' + file, arrayOfFiles);
     } else {
-      let element=Object();
+      let element=new Object();
       element.fullLink=`${config.get('url')}/${path.join(dirPath, '/', file)}`;
+      element.filePath=`${path.join(dirPath, '/', file)}`;
       element.extension= file.split('.').pop();
       element.name=file;
       arrayOfFiles.push(element);
@@ -26,6 +27,9 @@ function getAllFiles(dirPath, arrayOfFiles){
 module.exports = function (req, res, next) {
   if(req.path==='/content/api/files/listAll/'){
     return res.send(getAllFiles('./content/files'));
+  }
+  if(req.path==='/content/api/timetable/listAll/'){
+    return res.send(getAllFiles('./content/timetables'));
   }
   next()
     

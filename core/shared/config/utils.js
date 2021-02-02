@@ -53,6 +53,8 @@ exports.getContentPath = function getContentPath(type) {
         return path.join(this.get('paths:contentPath'), 'images/');
     case 'files':
         return path.join(this.get('paths:contentPath'), 'files/');
+    case 'timetables':
+        return path.join(this.get('paths:contentPath'), 'timetables/');
     case 'themes':
         return path.join(this.get('paths:contentPath'), 'themes/');
     case 'adapters':

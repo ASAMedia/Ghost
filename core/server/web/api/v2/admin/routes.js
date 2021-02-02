@@ -9,6 +9,8 @@ const sessionMw= require('../../../../services/auth/session');
 const expressSessionMw= require('../../../../services/auth/session/express-session');
 const fetch=require('node-fetch');
 require("dotenv").config();
+const fs = require('fs');
+const path = require('path');
 
 module.exports = function apiRoutes() {
     const router = express.Router('v2 admin');
@@ -60,19 +62,54 @@ module.exports = function apiRoutes() {
                 authorization: `Bearer ${process.env.WEB_ACCESS_TOKEN}`
             }
         });
-        /* const array=await data.arrayBuffer();
-        res.writeHead(200, {
-            'Content-Type': 'application/pdf',
-        });
-        const download = Buffer.from(array, 'base64');
-        res.end(download); */
-
         const array=await data.arrayBuffer();
         res.writeHead(200, {
             'Content-Type': 'application/json',
         });
         const download = Buffer.from(array, 'base64');
         res.end(download);
+    });
+
+    // ## Delete documents File
+    router.post('/documents/delete', async (req, res, next)=>{
+        req.session= await expressSessionMw.getSession(req, res);
+        next();
+    }, sessionMw.authenticate, async (req, res)=>{
+        if (!req.headers.file) {
+            return res.sendStatus(400);
+        }
+        let appDir = path.dirname(require.main.filename);
+        let fullFilePath=`${appDir}/${req.headers.file}`
+        try {
+            fs.unlinkSync(fullFilePath)
+            return res.sendStatus(200);
+            //file removed
+        } catch(err) {
+            console.error(err)
+            return res.sendStatus(400);
+        }
+        
+    });
+
+    // ## Delete timetable File
+    router.post('/timetables/delete', async (req, res, next)=>{
+        req.session= await expressSessionMw.getSession(req, res);
+        next();
+    }, sessionMw.authenticate, async (req, res)=>{
+        if (!req.headers.file) {
+            return res.sendStatus(400);
+        }
+        let appDir = path.dirname(require.main.filename);
+        let fullFilePath=`${appDir}/${req.headers.file}`
+        try {
+            fs.unlinkSync(fullFilePath)
+            return res.sendStatus(200);
+            //file removed
+        } catch(err) {
+            console.error(err)
+            return res.sendStatus(400);
+        }
+        
     });
 
     // ## Public
@@ -235,6 +272,13 @@ module.exports = function apiRoutes() {
         mw.authAdminApi,
         apiMw.upload.single('file'),
         http(apiv2.images.upload)
+    );
+
+    // ## Timetables
+    router.post('/timetable/upload',
+        mw.authAdminApi,
+        apiMw.upload.single('file'),
+        http(apiv2.timetables.upload)
     );
 
     // ## Invites
