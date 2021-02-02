@@ -49,6 +49,8 @@ exports.makePathsAbsolute = function makePathsAbsolute(obj, parent) {
  */
 exports.getContentPath = function getContentPath(type) {
     switch (type) {
+    case 'root':
+        return path.join(this.get('paths:contentPath'), '../');
     case 'images':
         return path.join(this.get('paths:contentPath'), 'images/');
     case 'files':
