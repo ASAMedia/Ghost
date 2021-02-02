@@ -59,7 +59,17 @@ class LocalFileStore extends StorageBase {
      */
     save(image, targetDir) {
         let targetFilename;
+        let maxFileSize=5000000;//in bytes
+        if (image.size>maxFileSize) {
+            return Promise.reject(new errors.UnsupportedMediaTypeError({
+                message: 'File is bigger than allowed',
+                code: 'FILE_BIGGER_THAN_5MB',
+                help: `Your file is ${image.size-maxFileSize} bytes bigger than allowed!`,
+                property: 'size'
+            }));
+        }
         if(!image.name){
+            console.log(image);
             targetDir = this.getTargetDir(config.getContentPath('files'));
             image.name=image.originalname.toLowerCase().replace(/[^a-z0-9-+_.*=]/g, '');
         }
