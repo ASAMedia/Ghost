@@ -19,6 +19,8 @@ class LocalFileStore extends StorageBase {
         super();
 
         this.storagePath = config.getContentPath('images');
+        this.filesStoragePath = config.getContentPath('files');
+        this.timetablesStoragePath = config.getContentPath('timetables');
     }
 
     /**
@@ -150,13 +152,14 @@ class LocalFileStore extends StorageBase {
 
     serveFile(categorie) {
         let {storagePath} = this;
-
+        let {timetablesStoragePath}=this;
+        let {filesStoragePath}=this;
         return function serveStaticContent(req, res, next) {
             if (categorie==='timetables') {
-                storagePath=`${path.dirname(require.main.filename)}/content/timetables`;
+                storagePath=timetablesStoragePath;
             }
             else if (categorie==='files') {
-                storagePath=`${path.dirname(require.main.filename)}/content/files`;
+                storagePath=filesStoragePath;
             }
             console.log(storagePath);
             const startedAtMoment = moment();
