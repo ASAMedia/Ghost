@@ -1,5 +1,6 @@
 const express = require('../../../../../shared/express');
 const apiv2 = require('../../../../api/v2');
+const config = require('../../../../../shared/config');
 const mw = require('./middleware');
 const apiMw = require('../../middleware');
 var request = require('request');
@@ -78,8 +79,9 @@ module.exports = function apiRoutes() {
         if (!req.headers.file) {
             return res.sendStatus(400);
         }
-        let appDir = path.dirname(require.main.filename);
-        let fullFilePath=`${appDir}/${req.headers.file}`
+        let appDir = config.getContentPath('root');
+        let fullFilePath=`${appDir}${req.headers.file}`;
+        console.log(fullFilePath);
         try {
             fs.unlinkSync(fullFilePath)
             return res.sendStatus(200);
@@ -99,8 +101,8 @@ module.exports = function apiRoutes() {
         if (!req.headers.file) {
             return res.sendStatus(400);
         }
-        let appDir = path.dirname(require.main.filename);
-        let fullFilePath=`${appDir}/${req.headers.file}`
+        let appDir = config.getContentPath('root');
+        let fullFilePath=`${appDir}${req.headers.file}`;
         try {
             fs.unlinkSync(fullFilePath)
             return res.sendStatus(200);
