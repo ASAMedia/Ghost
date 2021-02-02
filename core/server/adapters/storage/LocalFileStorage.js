@@ -158,6 +158,7 @@ class LocalFileStore extends StorageBase {
             else if (categorie==='files') {
                 storagePath=`${path.dirname(require.main.filename)}/content/files`;
             }
+            console.log(storagePath);
             const startedAtMoment = moment();
             return serveStatic(
                 storagePath,
