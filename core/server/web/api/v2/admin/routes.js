@@ -81,9 +81,9 @@ module.exports = function apiRoutes() {
         }
         let appDir = config.getContentPath('root');
         let fullFilePath=`${appDir}${req.headers.file}`;
-        console.log(fullFilePath);
         try {
             fs.unlinkSync(fullFilePath)
+            console.log(`Deleted File: ${fullFilePath}`);
             return res.sendStatus(200);
             //file removed
         } catch(err) {
