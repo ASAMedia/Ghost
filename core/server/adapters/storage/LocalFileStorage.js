@@ -69,13 +69,14 @@ class LocalFileStore extends StorageBase {
             }));
         }
         if(!image.name){
-            console.log(image);
             targetDir = this.getTargetDir(config.getContentPath('files'));
-            image.name=image.originalname.toLowerCase().replace(/[^a-z0-9-+.*=]/g, '');
+            image.name=image.originalname.toLowerCase().replace(' ','_').replace('ä','ae').replace('ö','oe').replace('ü','ue').replace(/[^a-z0-9-+_.*=]/g, '');
+            console.log(image);
         }
         else if(image.name==='timetable'){
             targetDir = this.getTargetDir(config.getContentPath('timetables'));
-            image.name=image.originalname.toLowerCase().replace(/[^a-z0-9-+.*=]/g, '');
+            image.name=image.originalname.toLowerCase().replace(' ','_').replace('ä','ae').replace('ö','oe').replace('ü','ue').replace(/[^a-z0-9-+_.*=]/g, '');
+            console.log(image);
         }
         // NOTE: the base implementation of `getTargetDir` returns the format this.storagePath/YYYY/MM
         targetDir = targetDir || this.getTargetDir(this.storagePath);

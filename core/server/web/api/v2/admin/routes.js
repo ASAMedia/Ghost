@@ -83,7 +83,7 @@ module.exports = function apiRoutes() {
         let fullFilePath=`${appDir}${req.headers.file}`;
         try {
             fs.unlinkSync(fullFilePath)
-            console.log(`Deleted File: ${fullFilePath}`);
+            console.log(`userID:${req.user.id}, deleted file: ${fullFilePath}`);
             return res.sendStatus(200);
             //file removed
         } catch(err) {
@@ -105,6 +105,7 @@ module.exports = function apiRoutes() {
         let fullFilePath=`${appDir}${req.headers.file}`;
         try {
             fs.unlinkSync(fullFilePath)
+            console.log(`userID:${req.user.id}, deleted file: ${fullFilePath}`);
             return res.sendStatus(200);
             //file removed
         } catch(err) {
@@ -275,6 +276,7 @@ module.exports = function apiRoutes() {
         apiMw.upload.single('file'),
         http(apiv2.images.upload)
     );
+    
 
     // ## Timetables
     router.post('/timetable/upload',
