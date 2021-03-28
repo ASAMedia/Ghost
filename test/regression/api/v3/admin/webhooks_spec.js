@@ -8,15 +8,14 @@ const ghost = testUtils.startGhost;
 
 describe('Webhooks API (v3)', function () {
     let request;
+    const API_VERSION = 'v3';
 
-    before(function () {
-        return ghost()
-            .then(function () {
-                request = supertest.agent(config.get('url'));
-            })
-            .then(function () {
-                return localUtils.doAuth(request, 'api_keys', 'webhooks');
-            });
+    before(async function () {
+        await ghost();
+
+        request = supertest.agent(config.get('url'));
+
+        await localUtils.doAuth(request, 'integrations', 'api_keys', 'webhooks');
     });
 
     it('Can create a webhook using integration', function () {
@@ -26,7 +25,7 @@ describe('Webhooks API (v3)', function () {
             integration_id: 'ignore_me',
             name: 'test',
             secret: 'thisissecret',
-            api_version: 'v3'
+            api_version: API_VERSION
         };
 
         return request.post(localUtils.API.getApiQuery('webhooks/'))
@@ -47,9 +46,60 @@ describe('Webhooks API (v3)', function () {
                 jsonResponse.webhooks[0].event.should.eql('test.create');
                 jsonResponse.webhooks[0].target_url.should.eql('http://example.com/webhooks/test/extra/v3');
                 jsonResponse.webhooks[0].integration_id.should.eql(testUtils.DataGenerator.Content.api_keys[0].integration_id);
+                jsonResponse.webhooks[0].name.should.eql('test');
+                jsonResponse.webhooks[0].secret.should.eql('thisissecret');
+                jsonResponse.webhooks[0].api_version.should.eql('v3');
 
                 localUtils.API.checkResponse(jsonResponse.webhooks[0], 'webhook');
             });
+    });
+
+    it('Fails validation for when integration_id is missing', function () {
+        let webhookData = {
+            event: 'test.create',
+            target_url: 'http://example.com/webhooks/test/extra/1',
+            name: 'test',
+            secret: 'thisissecret',
+            api_version: API_VERSION
+        };
+
+        return request.post(localUtils.API.getApiQuery('webhooks/'))
+            .set('Origin', config.get('url'))
+            .send({webhooks: [webhookData]})
+            .expect('Content-Type', /json/)
+            .expect('Cache-Control', testUtils.cacheRules.private)
+            .expect(422);
+    });
+
+    it('Fails validation for non-lowercase event name', function () {
+        let webhookData = {
+            event: 'tEst.evenT',
+            target_url: 'http://example.com/webhooks/test/extra/1',
+            name: 'test',
+            secret: 'thisissecret',
+            api_version: API_VERSION
+        };
+
+        return request.post(localUtils.API.getApiQuery('webhooks/'))
+            .set('Origin', config.get('url'))
+            .send({webhooks: [webhookData]})
+            .expect('Content-Type', /json/)
+            .expect('Cache-Control', testUtils.cacheRules.private)
+            .expect(422);
+    });
+
+    it('Fails validation when required fields are not present', function () {
+        let webhookData = {
+            api_version: API_VERSION,
+            integration_id: 'dummy'
+        };
+
+        return request.post(localUtils.API.getApiQuery('webhooks/'))
+            .set('Origin', config.get('url'))
+            .send({webhooks: [webhookData]})
+            .expect('Content-Type', /json/)
+            .expect('Cache-Control', testUtils.cacheRules.private)
+            .expect(422);
     });
 
     it('Integration cannot edit or delete other integration\'s webhook', function () {

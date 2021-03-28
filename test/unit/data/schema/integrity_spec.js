@@ -32,16 +32,16 @@ const defaultSettings = require('../../../../core/server/data/schema/default-set
  */
 describe('DB version integrity', function () {
     // Only these variables should need updating
-    const currentSchemaHash = 'c7e7b458f2c12ad193326784fefb80fe';
-    const currentFixturesHash = 'd46d696c94d03e41a5903500547fea77';
-    const currentSettingsHash = 'd3821715e4b34d92d6ba6ed0d4918f5c';
+    const currentSchemaHash = '559cdbb49a7eeb5758caf0c6e3bf790d';
+    const currentFixturesHash = '779f29a247161414025637e10e99a278';
+    const currentSettingsHash = '7ac732b994a5bb1565f88c8a84872964';
     const currentRoutesHash = '3d180d52c663d173a6be791ef411ed01';
 
     // If this test is failing, then it is likely a change has been made that requires a DB version bump,
     // and the values above will need updating as confirmation
     it('should not change without fixing this test', function () {
         const routesPath = path.join(config.get('paths').defaultSettings, 'default-routes.yaml');
-        const defaultRoutes = validateFrontendSettings(yaml.safeLoad(fs.readFileSync(routesPath, 'utf-8')));
+        const defaultRoutes = validateFrontendSettings(yaml.load(fs.readFileSync(routesPath, 'utf-8')));
 
         const tablesNoValidation = _.cloneDeep(schema.tables);
         let schemaHash;

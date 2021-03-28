@@ -1,7 +1,8 @@
 const MembersSSR = require('@tryghost/members-ssr');
-
+const db = require('../../data/db');
 const MembersConfigProvider = require('./config');
 const MembersCSVImporter = require('./importer');
+const MembersStats = require('./stats');
 const createMembersApiInstance = require('./api');
 const createMembersSettingsInstance = require('./settings');
 const {events} = require('../../lib/common');
@@ -61,8 +62,6 @@ events.on('settings.edited', function updateSettingFromModel(settingModel) {
 const membersService = {
     contentGating: require('./content-gating'),
 
-    checkHostLimit: require('./limit'),
-
     config: membersConfig,
 
     get api() {
@@ -71,6 +70,9 @@ const membersService = {
 
             membersApi.bus.on('error', function (err) {
                 logging.error(err);
+                if (err.fatal) {
+                    process.exit(1);
+                }
             });
         }
         return membersApi;
@@ -93,7 +95,13 @@ const membersService = {
 
     stripeConnect: require('./stripe-connect'),
 
-    importer: new MembersCSVImporter({storagePath: config.getContentPath('data')}, settingsCache, () => membersApi)
+    importer: new MembersCSVImporter({storagePath: config.getContentPath('data')}, settingsCache, () => membersApi),
+
+    stats: new MembersStats({
+        db: db,
+        settingsCache: settingsCache,
+        isSQLite: config.get('database:client') === 'sqlite3'
+    })
 };
 
 module.exports = membersService;

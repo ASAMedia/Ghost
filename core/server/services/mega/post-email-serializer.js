@@ -43,10 +43,9 @@ const createUnsubscribeUrl = (uuid) => {
 
 // NOTE: serialization is needed to make sure we are using current API and do post transformations
 //       such as image URL transformation from relative to absolute
-const serializePostModel = async (model) => {
+const serializePostModel = async (model, apiVersion = 'v4') => {
     // fetch mobiledoc rather than html and plaintext so we can render email-specific contents
     const frame = {options: {context: {user: true}, formats: 'mobiledoc'}};
-    const apiVersion = model.get('api_version') || 'v3';
     const docName = 'posts';
 
     await api.shared
@@ -120,8 +119,8 @@ const parseReplacements = (email) => {
     return replacements;
 };
 
-const serialize = async (postModel, options = {isBrowserPreview: false}) => {
-    const post = await serializePostModel(postModel);
+const serialize = async (postModel, options = {isBrowserPreview: false, apiVersion: 'v4'}) => {
+    const post = await serializePostModel(postModel, options.apiVersion);
 
     const timezone = settingsCache.get('timezone');
     const momentDate = post.published_at ? moment(post.published_at) : moment();
@@ -156,7 +155,8 @@ const serialize = async (postModel, options = {isBrowserPreview: false}) => {
         showSiteHeader: settingsCache.get('newsletter_show_header'),
         bodyFontCategory: settingsCache.get('newsletter_body_font_category'),
         showBadge: settingsCache.get('newsletter_show_badge'),
-        footerContent: settingsCache.get('newsletter_footer_content')
+        footerContent: settingsCache.get('newsletter_footer_content'),
+        accentColor: settingsCache.get('accent_color')
     };
     let htmlTemplate = template({post, site: getSite(), templateSettings});
     if (options.isBrowserPreview) {

@@ -27,6 +27,16 @@ describe('Redirects API', function () {
             });
     });
 
+    const startGhost = (options) => {
+        return ghost(options)
+            .then(() => {
+                request = supertest.agent(config.get('url'));
+            })
+            .then(() => {
+                return localUtils.doAuth(request);
+            });
+    };
+
     describe('Download', function () {
         afterEach(function () {
             configUtils.config.set('paths:contentPath', originalContentPath);
@@ -75,6 +85,7 @@ describe('Redirects API', function () {
         });
 
         // 'file does not exist' doesn't have to be tested because it always returns .json file.
+        // TODO: But it should be written when the default redirects file type is changed to yaml.
 
         it('file exists', function () {
             return request
@@ -132,16 +143,6 @@ describe('Redirects API', function () {
         });
 
         describe('Ensure re-registering redirects works', function () {
-            const startGhost = (options) => {
-                return ghost(options)
-                    .then(() => {
-                        request = supertest.agent(config.get('url'));
-                    })
-                    .then(() => {
-                        return localUtils.doAuth(request);
-                    });
-            };
-
             it('no redirects file exists', function () {
                 return startGhost({redirectsFile: false, forceStart: true})
                     .then(() => {
@@ -254,19 +255,20 @@ describe('Redirects API', function () {
     });
 
     describe('Upload yaml', function () {
-        // No error cases here because there are no easy syntax pitfalls in the yaml format.
+        describe('Error cases', function () {
+            it('syntax error', function () {
+                fs.writeFileSync(path.join(config.get('paths:contentPath'), 'redirects.yaml'), 'x');
+
+                return request
+                    .post(localUtils.API.getApiQuery('redirects/json/'))
+                    .set('Origin', config.get('url'))
+                    .attach('redirects', path.join(config.get('paths:contentPath'), 'redirects.yaml'))
+                    .expect('Content-Type', /application\/json/)
+                    .expect(400);
+            });
+        });
 
         describe('Ensure re-registering redirects works', function () {
-            const startGhost = (options) => {
-                return ghost(options)
-                    .then(() => {
-                        request = supertest.agent(config.get('url'));
-                    })
-                    .then(() => {
-                        return localUtils.doAuth(request);
-                    });
-            };
-
             it('no redirects file exists', function () {
                 return startGhost({redirectsFile: false, forceStart: true})
                     .then(() => {
@@ -378,6 +380,50 @@ describe('Redirects API', function () {
                         dataFiles.join(',').match(/(redirects)/g).length.should.eql(3);
                     });
             });
+        });
+    });
+
+    // https://github.com/TryGhost/Ghost/issues/10898
+    describe('Merge querystring', function () {
+        it('toURL param takes precedence, other params pass through', function () {
+            return startGhost({forceStart: true, redirectsFileExt: '.json'})
+                .then(function () {
+                    return request
+                        .get('/test-params/?q=123&lang=js')
+                        .expect(301)
+                        .then(function (res) {
+                            res.headers.location.should.eql('/result?q=abc&lang=js');
+                        });
+                });
+        });
+    });
+
+    // TODO: For backward compatibility, we only check if download, upload endpoints work here.
+    // when updating to v4, the old endpoints should be updated to the new ones.
+    // And the tests below should be removed.
+    describe('New endpoints work', function () {
+        it('download', function () {
+            return request
+                .get(localUtils.API.getApiQuery('redirects/download/'))
+                .set('Origin', config.get('url'))
+                .expect('Content-Type', /application\/json/)
+                .expect('Content-Disposition', 'Attachment; filename="redirects.json"')
+                .expect(200);
+        });
+
+        it('upload', function () {
+            // Provide a redirects file in the root directory of the content test folder
+            fs.writeFileSync(path.join(config.get('paths:contentPath'), 'redirects-init.json'), JSON.stringify([{
+                from: 'k',
+                to: 'l'
+            }]));
+
+            return request
+                .post(localUtils.API.getApiQuery('redirects/upload/'))
+                .set('Origin', config.get('url'))
+                .attach('redirects', path.join(config.get('paths:contentPath'), 'redirects-init.json'))
+                .expect('Content-Type', /application\/json/)
+                .expect(200);
         });
     });
 });

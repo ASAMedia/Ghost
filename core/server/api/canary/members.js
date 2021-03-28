@@ -3,16 +3,13 @@
 const Promise = require('bluebird');
 const moment = require('moment-timezone');
 const errors = require('@tryghost/errors');
-const GhostMailer = require('../../services/mail').GhostMailer;
-const config = require('../../../shared/config');
 const models = require('../../models');
 const membersService = require('../../services/members');
-const jobsService = require('../../services/jobs');
+
 const settingsCache = require('../../services/settings/cache');
 const {i18n} = require('../../lib/common');
-const db = require('../../data/db');
+const _ = require('lodash');
 
-const ghostMailer = new GhostMailer();
 const allowedIncludes = ['email_recipients'];
 
 module.exports = {
@@ -38,8 +35,7 @@ module.exports = {
             'order',
             'debug',
             'page',
-            'search',
-            'paid'
+            'search'
         ],
         permissions: true,
         validation: {},
@@ -189,10 +185,10 @@ module.exports = {
         permissions: true,
         async query(frame) {
             try {
-                frame.options.withRelated = ['stripeSubscriptions'];
+                frame.options.withRelated = ['stripeSubscriptions', 'labels'];
                 const member = await membersService.api.members.update(frame.data.members[0], frame.options);
 
-                const hasCompedSubscription = !!member.related('stripeSubscriptions').find(subscription => subscription.get('plan_nickname') === 'Complimentary');
+                const hasCompedSubscription = !!member.related('stripeSubscriptions').find(sub => sub.get('plan_nickname') === 'Complimentary' && sub.get('status') === 'active');
 
                 if (typeof frame.data.members[0].comped === 'boolean') {
                     if (frame.data.members[0].comped && !hasCompedSubscription) {
@@ -251,9 +247,12 @@ module.exports = {
             method: 'edit'
         },
         async query(frame) {
-            await membersService.api.members.updateSubscription(frame.options.id, {
-                subscriptionId: frame.options.subscription_id,
-                cancelAtPeriodEnd: frame.data.cancel_at_period_end
+            await membersService.api.members.updateSubscription({
+                id: frame.options.id,
+                subscription: {
+                    subscription_id: frame.options.subscription_id,
+                    cancel_at_period_end: frame.data.cancel_at_period_end
+                }
             });
             let model = await membersService.api.members.get({id: frame.options.id}, {
                 withRelated: ['labels', 'stripeSubscriptions', 'stripeSubscriptions.customer']
@@ -305,8 +304,7 @@ module.exports = {
         options: [
             'limit',
             'filter',
-            'search',
-            'paid'
+            'search'
         ],
         headers: {
             disposition: {
@@ -353,50 +351,17 @@ module.exports = {
             const globalLabels = [importLabel].concat(frame.data.labels);
             const pathToCSV = frame.file.path;
             const headerMapping = frame.data.mapping;
-            const job = await membersService.importer.prepare(pathToCSV, headerMapping, globalLabels, {
-                createdBy: frame.user.id
+
+            return membersService.importer.process({
+                pathToCSV,
+                headerMapping,
+                globalLabels,
+                importLabel,
+                LabelModel: models.Label,
+                user: {
+                    email: frame.user.get('email')
+                }
             });
-
-            if (job.batches <= 500 && !job.metadata.hasStripeData) {
-                const result = await membersService.importer.perform(job.id);
-                const importLabelModel = result.imported ? await models.Label.findOne(importLabel) : null;
-                return {
-                    meta: {
-                        stats: {
-                            imported: result.imported,
-                            invalid: result.errors
-                        },
-                        import_label: importLabelModel
-                    }
-                };
-            } else {
-                const emailRecipient = frame.user.get('email');
-                jobsService.addJob(async () => {
-                    const result = await membersService.importer.perform(job.id);
-                    const importLabelModel = result.imported ? await models.Label.findOne(importLabel) : null;
-                    const emailContent = membersService.importer.generateCompletionEmail(result, {
-                        emailRecipient,
-                        importLabel: importLabelModel ? importLabelModel.toJSON() : null
-                    });
-                    const errorCSV = membersService.importer.generateErrorCSV(result);
-                    const emailSubject = result.imported > 0 ? 'Your member import is complete' : 'Your member import was unsuccessful';
-
-                    await ghostMailer.send({
-                        to: emailRecipient,
-                        subject: emailSubject,
-                        html: emailContent,
-                        forceTextContent: true,
-                        attachments: [{
-                            filename: `${importLabel.name} - Errors.csv`,
-                            contents: errorCSV,
-                            contentType: 'text/csv',
-                            contentDisposition: 'attachment'
-                        }]
-                    });
-                });
-
-                return {};
-            }
         }
     },
 
@@ -415,108 +380,115 @@ module.exports = {
             }
         },
         async query(frame) {
-            const dateFormat = 'YYYY-MM-DD HH:mm:ss';
-            const isSQLite = config.get('database:client') === 'sqlite3';
-            const siteTimezone = settingsCache.get('timezone');
-            const tzOffsetMins = moment.tz(siteTimezone).utcOffset();
-
             const days = frame.options.days === 'all-time' ? 'all-time' : Number(frame.options.days || 30);
 
-            // get total members before other stats because the figure is used multiple times
-            async function getTotalMembers() {
-                const result = await db.knex.raw('SELECT COUNT(id) AS total FROM members');
-                return isSQLite ? result[0].total : result[0][0].total;
-            }
-            const totalMembers = await getTotalMembers();
+            return await membersService.stats.fetch(days);
+        }
+    },
 
-            async function getTotalMembersInRange() {
-                if (days === 'all-time') {
-                    return totalMembers;
-                }
+    memberStats: {
+        permissions: {
+            method: 'browse'
+        },
+        async query() {
+            const memberStats = await membersService.api.events.getStatuses();
+            let totalMembers = _.last(memberStats) ? (_.last(memberStats).paid + _.last(memberStats).free + _.last(memberStats).comped) : 0;
 
-                const startOfRange = moment.tz(siteTimezone).subtract(days - 1, 'days').startOf('day').utc().format(dateFormat);
-                const result = await db.knex.raw('SELECT COUNT(id) AS total FROM members WHERE created_at >= ?', [startOfRange]);
-                return isSQLite ? result[0].total : result[0][0].total;
-            }
-
-            async function getTotalMembersOnDatesInRange() {
-                const startOfRange = moment.tz(siteTimezone).subtract(days - 1, 'days').startOf('day').utc().format(dateFormat);
-                let result;
-
-                if (isSQLite) {
-                    const dateModifier = `${Math.sign(tzOffsetMins) === -1 ? '' : '+'}${tzOffsetMins} minutes`;
-
-                    result = await db.knex('members')
-                        .select(db.knex.raw('DATE(created_at, ?) AS created_at, COUNT(DATE(created_at, ?)) AS count', [dateModifier, dateModifier]))
-                        .where((builder) => {
-                            if (days !== 'all-time') {
-                                builder.whereRaw('created_at >= ?', [startOfRange]);
-                            }
-                        }).groupByRaw('DATE(created_at, ?)', [dateModifier]);
-                } else {
-                    const mins = Math.abs(tzOffsetMins) % 60;
-                    const hours = (Math.abs(tzOffsetMins) - mins) / 60;
-                    const utcOffset = `${Math.sign(tzOffsetMins) === -1 ? '-' : '+'}${hours}:${mins < 10 ? '0' : ''}${mins}`;
-
-                    result = await db.knex('members')
-                        .select(db.knex.raw('DATE(CONVERT_TZ(created_at, \'+00:00\', ?)) AS created_at, COUNT(CONVERT_TZ(created_at, \'+00:00\', ?)) AS count', [utcOffset, utcOffset]))
-                        .where((builder) => {
-                            if (days !== 'all-time') {
-                                builder.whereRaw('created_at >= ?', [startOfRange]);
-                            }
-                        })
-                        .groupByRaw('DATE(CONVERT_TZ(created_at, \'+00:00\', ?))', [utcOffset]);
-                }
-
-                // sql doesn't return rows with a 0 count so we build an object
-                // with sparse results to reference by date rather than performing
-                // multiple finds across an array
-                const resultObject = {};
-                result.forEach((row) => {
-                    resultObject[moment(row.created_at).format('YYYY-MM-DD')] = row.count;
-                });
-
-                // loop over every date in the range so we can return a contiguous range object
-                const totalInRange = Object.values(resultObject).reduce((acc, value) => acc + value, 0);
-                let runningTotal = totalMembers - totalInRange;
-                let currentRangeDate;
-
-                if (days === 'all-time') {
-                    // start from the date of first created member
-                    currentRangeDate = moment(moment(result[0].created_at).format('YYYY-MM-DD')).tz(siteTimezone);
-                } else {
-                    currentRangeDate = moment.tz(siteTimezone).subtract(days - 1, 'days');
-                }
-
-                let endDate = moment.tz(siteTimezone).add(1, 'hour');
-                const output = {};
-
-                while (currentRangeDate.isBefore(endDate)) {
-                    let dateStr = currentRangeDate.format('YYYY-MM-DD');
-                    runningTotal += resultObject[dateStr] || 0;
-                    output[dateStr] = runningTotal;
-
-                    currentRangeDate = currentRangeDate.add(1, 'day');
-                }
-
-                return output;
-            }
-
-            async function getNewMembersToday() {
-                const startOfToday = moment.tz(siteTimezone).startOf('day').utc().format(dateFormat);
-                const result = await db.knex.raw('SELECT count(id) AS total FROM members WHERE created_at >= ?', [startOfToday]);
-                return isSQLite ? result[0].total : result[0][0].total;
-            }
-
-            // perform final calculations in parallel
-            const results = await Promise.props({
+            return {
+                resource: 'members',
                 total: totalMembers,
-                total_in_range: getTotalMembersInRange(),
-                total_on_date: getTotalMembersOnDatesInRange(),
-                new_today: getNewMembersToday()
-            });
+                data: memberStats.map((d) => {
+                    const {paid, free, comped} = d;
+                    return {
+                        date: moment(d.date).format('YYYY-MM-DD'),
+                        paid, free, comped
+                    };
+                })
+            };
+        }
+    },
 
-            return results;
+    mrrStats: {
+        permissions: {
+            method: 'browse'
+        },
+        async query() {
+            const mrrData = await membersService.api.events.getMRR();
+            const mrrStats = Object.keys(mrrData).map((curr) => {
+                return {
+                    currency: curr,
+                    data: mrrData[curr].map((d) => {
+                        return Object.assign({}, {
+                            date: moment(d.date).format('YYYY-MM-DD'),
+                            value: d.mrr
+                        });
+                    })
+                };
+            });
+            return {
+                resource: 'mrr',
+                data: mrrStats
+            };
+        }
+    },
+    subscriberStats: {
+        permissions: {
+            method: 'browse'
+        },
+        async query() {
+            const statsData = await membersService.api.events.getSubscriptions();
+            const totalSubscriptions = (_.last(statsData) && _.last(statsData).subscribed) || 0;
+            statsData.forEach((d) => {
+                d.date = moment(d.date).format('YYYY-MM-DD');
+            });
+            return {
+                resource: 'subscribers',
+                total: totalSubscriptions,
+                data: statsData.map((d) => {
+                    return Object.assign({}, {
+                        date: moment(d.date).format('YYYY-MM-DD'),
+                        value: d.subscribed
+                    });
+                })
+            };
+        }
+    },
+    grossVolumeStats: {
+        permissions: {
+            method: 'browse'
+        },
+        async query() {
+            const volumeData = await membersService.api.events.getVolume();
+            const volumeStats = Object.keys(volumeData).map((curr) => {
+                return {
+                    currency: curr,
+                    data: volumeData[curr].map((d) => {
+                        return Object.assign({}, {
+                            date: moment(d.date).format('YYYY-MM-DD'),
+                            value: d.volume
+                        });
+                    })
+                };
+            });
+            return {
+                resource: 'gross-volume',
+                data: volumeStats
+            };
+        }
+    },
+
+    activityFeed: {
+        options: [
+            'limit'
+        ],
+        permissions: {
+            method: 'browse'
+        },
+        async query(frame) {
+            const events = await membersService.api.events.getEventTimeline(frame.options);
+            return {
+                events
+            };
         }
     }
 };

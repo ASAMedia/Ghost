@@ -1,6 +1,5 @@
 const _ = require('lodash');
 const logging = require('../../../shared/logging');
-const labsService = require('../labs');
 const membersService = require('./index');
 const urlUtils = require('../../../shared/url-utils');
 const ghostVersion = require('../../lib/ghost-version');
@@ -10,17 +9,12 @@ const {formattedMemberResponse} = require('./utils');
 // @TODO: This piece of middleware actually belongs to the frontend, not to the member app
 // Need to figure a way to separate these things (e.g. frontend actually talks to members API)
 const loadMemberSession = async function (req, res, next) {
-    if (!labsService.isSet('members')) {
-        req.member = null;
-        return next();
-    }
     try {
         const member = await membersService.ssr.getMemberDataFromSession(req, res);
         Object.assign(req, {member});
         res.locals.member = req.member;
         next();
     } catch (err) {
-        logging.warn(err.message);
         Object.assign(req, {member: null});
         next();
     }
@@ -32,7 +26,6 @@ const getIdentityToken = async function (req, res) {
         res.writeHead(200);
         res.end(token);
     } catch (err) {
-        logging.warn(err.message);
         res.writeHead(err.statusCode);
         res.end(err.message);
     }
@@ -44,7 +37,6 @@ const deleteSession = async function (req, res) {
         res.writeHead(204);
         res.end();
     } catch (err) {
-        logging.warn(err.message);
         res.writeHead(err.statusCode);
         res.end(err.message);
     }
@@ -59,8 +51,7 @@ const getMemberData = async function (req, res) {
             res.json(null);
         }
     } catch (err) {
-        logging.warn(err.message);
-        res.writeHead(err.statusCode);
+        res.writeHead(401);
         res.end(err.message);
     }
 };
@@ -81,7 +72,6 @@ const updateMemberData = async function (req, res) {
             res.json(null);
         }
     } catch (err) {
-        logging.warn(err.message);
         res.writeHead(err.statusCode);
         res.end(err.message);
     }
@@ -90,6 +80,7 @@ const updateMemberData = async function (req, res) {
 const getMemberSiteData = async function (req, res) {
     const isStripeConfigured = membersService.config.isStripeConnected();
     const domain = urlUtils.urlFor('home', true).match(new RegExp('^https?://([^/:?#]+)(?:[/:?#]|$)', 'i'));
+    const firstpromoterId = settingsCache.get('firstpromoter') ? settingsCache.get('firstpromoter_id') : '';
     const blogDomain = domain && domain[1];
     let supportAddress = settingsCache.get('members_support_address') || 'noreply';
     if (!supportAddress.includes('@')) {
@@ -112,6 +103,7 @@ const getMemberSiteData = async function (req, res) {
         portal_button_icon: settingsCache.get('portal_button_icon'),
         portal_button_signup_text: settingsCache.get('portal_button_signup_text'),
         portal_button_style: settingsCache.get('portal_button_style'),
+        firstpromoter_id: firstpromoterId,
         members_support_address: supportAddress
     };
 
@@ -134,9 +126,9 @@ const createSessionFromMagicLink = async function (req, res, next) {
 
     try {
         const member = await membersService.ssr.exchangeTokenForSession(req, res);
-        const subscriptions = member && member.stripe && member.stripe.subscriptions || [];
+        const subscriptions = member && member.subscriptions || [];
 
-        const action = req.query.action || req.query['portal-action'];
+        const action = req.query.action;
 
         if (action === 'signup') {
             let customRedirect = '';
