@@ -87,6 +87,10 @@ module.exports = {
         return shared.pipeline(require('./labels'), localUtils);
     },
 
+    get timetables() {
+        return shared.pipeline(require('./timetables'), localUtils);
+    },
+    
     get images() {
         return shared.pipeline(require('./images'), localUtils);
     },
