@@ -125,11 +125,11 @@ class LocalFileStore extends StorageBase {
 
         return function serveStaticContent(req, res, next) {
             const startedAtMoment = moment();
-
+            const maxAge = req.path.includes('kalender_small') ? 86400000 : constants.ONE_YEAR_MS;
             return serveStatic(
                 storagePath,
                 {
-                    maxAge: constants.ONE_YEAR_MS,
+                    maxAge: maxAge, //31536000000
                     fallthrough: false,
                     onEnd: () => {
                         logging.info('LocalFileStorage.serve', req.path, moment().diff(startedAtMoment, 'ms') + 'ms');
@@ -172,7 +172,6 @@ class LocalFileStore extends StorageBase {
             else if (categorie==='files') {
                 storagePath=filesStoragePath;
             }
-            console.log(storagePath);
             const startedAtMoment = moment();
             return serveStatic(
                 storagePath,
