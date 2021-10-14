@@ -6,59 +6,6 @@ const {WRITABLE_KEYS_ALLOWLIST} = require('../../../../../../shared/labs');
 
 const DEPRECATED_SETTINGS = [
     'bulk_email_settings',
-    'slack'
-];
-
-const deprecatedSupportedSettingsOneToManyMap = {
-    slack: [{
-        from: '[0].url',
-        to: {
-            key: 'slack_url',
-            group: 'slack',
-            type: 'string'
-        }
-    }, {
-        from: '[0].username',
-        to: {
-            key: 'slack_username',
-            group: 'slack',
-            type: 'string'
-        }
-    }]
-};
-
-const getMappedDeprecatedSettings = (settings) => {
-    const mappedSettings = [];
-
-    for (const key in deprecatedSupportedSettingsOneToManyMap) {
-        const deprecatedSetting = settings.find(setting => setting.key === key);
-
-        if (deprecatedSetting) {
-            let deprecatedSettingValue;
-
-            try {
-                deprecatedSettingValue = JSON.parse(deprecatedSetting.value);
-            } catch (err) {
-                // ignore the value if it's invalid
-            }
-
-            if (deprecatedSettingValue) {
-                deprecatedSupportedSettingsOneToManyMap[key].forEach(({from, to}) => {
-                    const value = _.get(deprecatedSettingValue, from);
-                    mappedSettings.push({
-                        key: to.key,
-                        value: value
-                    });
-                });
-            }
-        }
-    }
-
-    return mappedSettings;
-};
-
-const DEPRECATED_SETTINGS = [
-    'bulk_email_settings',
     'slack',
     'labs'
 ];
