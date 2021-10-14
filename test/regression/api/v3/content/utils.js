@@ -11,23 +11,25 @@ const expectedProperties = {
     authors: ['authors', 'meta'],
     pagination: ['page', 'limit', 'pages', 'total', 'next', 'prev'],
 
+
     post: _(schema.posts)
         .keys()
         .filter(key => key.indexOf('@@') === -1)
         // by default we only return html
         .without('mobiledoc', 'plaintext')
-        // v3 doesn't return author_id OR author
+        // v2 doesn't return author_id OR author
         .without('author_id', 'author')
-        // and always returns computed properties: url, primary_tag, primary_author
+        // and always returns computed properties: url
         .concat('url')
-        // v3 API doesn't return unused fields
+        // v2 API doesn't return unused fields
         .without('locale')
         // These fields aren't useful as they always have known values
         .without('status')
+        // v2 API doesn't return new type field
+        .without('type')
         // @TODO: https://github.com/TryGhost/Ghost/issues/10335
         // .without('page')
-        .without('type')
-        // v3 returns a calculated excerpt field
+        // v2 returns a calculated excerpt field
         .concat('excerpt')
         // Access is a calculated property in >= v3
         .concat('access')
@@ -36,8 +38,8 @@ const expectedProperties = {
             ..._(schema.posts_meta).keys().without('post_id', 'id')
         )
         .concat('reading_time')
-        .concat('send_email_when_published')
     ,
+
     author: _(schema.users)
         .keys()
         .without(

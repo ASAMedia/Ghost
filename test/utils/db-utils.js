@@ -1,4 +1,4 @@
-const debug = require('ghost-ignition').debug('test:dbUtils');
+const debug = require('@tryghost/debug')('test:dbUtils');
 
 // Utility Packages
 const Promise = require('bluebird');
@@ -6,7 +6,6 @@ const KnexMigrator = require('knex-migrator');
 const knexMigrator = new KnexMigrator();
 
 // Ghost Internals
-const {events} = require('../../core/server/lib/common');
 const config = require('../../core/shared/config');
 const db = require('../../core/server/data/db');
 const schema = require('../../core/server/data/schema').tables;

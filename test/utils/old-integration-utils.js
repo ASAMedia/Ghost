@@ -5,9 +5,9 @@ const path = require('path');
 const models = require('../../core/server/models');
 const routingService = require('../../core/frontend/services/routing');
 const settingsService = require('../../core/server/services/settings');
-const settingsCache = require('../../core/server/services/settings/cache');
+const settingsCache = require('../../core/shared/settings-cache');
 const imageLib = require('../../core/server/lib/image');
-const themes = require('../../core/frontend/services/themes');
+const themeService = require('../../core/server/services/themes');
 
 // Other Test Utilities
 const configUtils = require('./configUtils');
@@ -42,11 +42,9 @@ module.exports = {
     initGhost: () => {
         models.init();
 
-        settingsCache.shutdown();
-
         return settingsService.init()
             .then(() => {
-                return themes.init();
+                return themeService.init();
             });
     },
 

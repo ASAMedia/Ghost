@@ -5,10 +5,18 @@ const crypto = require('crypto');
 const keypair = require('keypair');
 const ObjectID = require('bson-objectid');
 const ghostBookshelf = require('./base');
-const {i18n} = require('../lib/common');
+const tpl = require('@tryghost/tpl');
 const errors = require('@tryghost/errors');
-const validation = require('../data/validation');
+const validator = require('@tryghost/validator');
 const urlUtils = require('../../shared/url-utils');
+const {WRITABLE_KEYS_ALLOWLIST} = require('../../shared/labs');
+
+const messages = {
+    valueCannotBeBlank: 'Value in [settings.key] cannot be blank.',
+    unableToFindSetting: 'Unable to find setting to update: {key}',
+    notEnoughPermission: 'You do not have permission to perform this action'
+};
+
 const internalContext = {context: {internal: true}};
 let Settings;
 let defaultSettings;
@@ -102,14 +110,14 @@ Settings = ghostBookshelf.Model.extend({
         model.emitChange(model._previousAttributes.key + '.' + 'deleted', options);
     },
 
-    onCreated: function onCreated(model, response, options) {
+    onCreated: function onCreated(model, options) {
         ghostBookshelf.Model.prototype.onCreated.apply(this, arguments);
 
         model.emitChange('added', options);
         model.emitChange(model.attributes.key + '.' + 'added', options);
     },
 
-    onUpdated: function onUpdated(model, response, options) {
+    onUpdated: function onUpdated(model, options) {
         ghostBookshelf.Model.prototype.onUpdated.apply(this, arguments);
 
         model.emitChange('edited', options);
@@ -206,7 +214,7 @@ Settings = ghostBookshelf.Model.extend({
                 item = item.toJSON();
             }
             if (!(_.isString(item.key) && item.key.length > 0)) {
-                return Promise.reject(new errors.ValidationError({message: i18n.t('errors.models.settings.valueCannotBeBlank')}));
+                return Promise.reject(new errors.ValidationError({message: tpl(messages.valueCannotBeBlank)}));
             }
 
             item = self.filterData(item);
@@ -235,7 +243,7 @@ Settings = ghostBookshelf.Model.extend({
                     }
                 }
 
-                return Promise.reject(new errors.NotFoundError({message: i18n.t('errors.models.settings.unableToFindSetting', {key: item.key})}));
+                return Promise.reject(new errors.NotFoundError({message: tpl(messages.unableToFindSetting, {key: item.key})}));
             });
         });
     },
@@ -285,7 +293,7 @@ Settings = ghostBookshelf.Model.extend({
                         defaultSetting.value = defaultSetting.getDefaultValue();
 
                         const settingValues = Object.assign({}, defaultSetting, {
-                            id: ObjectID.generate(),
+                            id: ObjectID().toHexString(),
                             created_at: date,
                             created_by: owner.id,
                             updated_at: date,
@@ -316,7 +324,7 @@ Settings = ghostBookshelf.Model.extend({
         }
 
         return Promise.reject(new errors.NoPermissionError({
-            message: i18n.t('errors.models.post.notEnoughPermission')
+            message: tpl(messages.notEnoughPermission)
         }));
     },
 
@@ -330,7 +338,7 @@ Settings = ghostBookshelf.Model.extend({
             }
 
             // Basic validations from default-settings.json
-            const validationErrors = validation.validate(
+            const validationErrors = validator.validate(
                 model.get('value'),
                 model.get('key'),
                 settingDefault.validations,
@@ -339,6 +347,17 @@ Settings = ghostBookshelf.Model.extend({
 
             if (validationErrors.length) {
                 throw new errors.ValidationError(validationErrors.join('\n'));
+            }
+        },
+        async labs(model) {
+            const flags = JSON.parse(model.get('value'));
+
+            for (const flag in flags) {
+                if (!WRITABLE_KEYS_ALLOWLIST.includes(flag)) {
+                    throw new errors.ValidationError({
+                        message: `Settings lab value cannot have value other then ${WRITABLE_KEYS_ALLOWLIST.join(', ')}`
+                    });
+                }
             }
         },
         async stripe_plans(model, options) {

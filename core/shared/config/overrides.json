@@ -6,7 +6,7 @@
         "helperTemplates": "core/frontend/helpers/tpl/",
         "adminViews": "core/server/web/admin/views/",
         "defaultViews": "core/server/views/",
-        "defaultSettings": "core/frontend/services/settings/",
+        "defaultSettings": "core/server/services/route-settings/",
         "internalAppPath": "core/frontend/apps/",
         "internalAdaptersPath": "core/server/adapters/",
         "migrationPath": "core/server/data/migrations",
@@ -27,8 +27,8 @@
             "contentTypes": ["text/csv", "application/csv", "application/octet-stream", "application/vnd.ms-excel"]
         },
         "images": {
-            "extensions": [".jpg", ".jpeg", ".gif", ".png", ".svg", ".svgz", ".ico"],
-            "contentTypes": ["image/jpeg", "image/png", "image/gif", "image/svg+xml", "image/x-icon", "image/vnd.microsoft.icon"]
+            "extensions": [".jpg", ".jpeg", ".gif", ".png", ".svg", ".svgz", ".ico", ".webp"],
+            "contentTypes": ["image/jpeg", "image/png", "image/gif", "image/svg+xml", "image/x-icon", "image/vnd.microsoft.icon", "image/webp"]
         },
         "icons": {
             "extensions": [".png", ".ico"],
@@ -62,6 +62,7 @@
     "api": {
         "versions": {
             "all": ["v2", "v3", "v4", "canary"],
+            "default": "v4",
             "canary": {
                 "admin": "canary/admin",
                 "content": "canary/content"

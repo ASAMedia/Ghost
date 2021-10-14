@@ -1,4 +1,4 @@
-const debug = require('ghost-ignition').debug('importer:settings');
+const debug = require('@tryghost/debug')('importer:settings');
 const Promise = require('bluebird');
 const ObjectId = require('bson-objectid').default;
 const _ = require('lodash');
@@ -6,7 +6,9 @@ const BaseImporter = require('./base');
 const models = require('../../../../models');
 const keyGroupMapper = require('../../../../api/shared/serializers/input/utils/settings-key-group-mapper');
 const keyTypeMapper = require('../../../../api/shared/serializers/input/utils/settings-key-type-mapper');
+const {WRITABLE_KEYS_ALLOWLIST} = require('../../../../../shared/labs');
 
+const labsDefaults = JSON.parse(defaultSettings.labs.labs.defaultValue);
 const ignoredSettings = ['slack_url', 'members_from_address', 'members_support_address'];
 
 // NOTE: drop support in Ghost 5.0
@@ -134,7 +136,7 @@ class SettingsImporter extends BaseImporter {
                             : deprecatedSetting.value;
 
                         this.dataToImport.push({
-                            id: ObjectId.generate(),
+                            id: ObjectId().toHexString(),
                             key: to.key,
                             value: value,
                             group: to.group,
@@ -162,6 +164,13 @@ class SettingsImporter extends BaseImporter {
             // accent_color can be empty pre-4.x
             if (data.key === 'accent_color' && !data.value) {
                 data.value = '#15171A';
+            }
+
+            // members_allow_free_signup was renamed to members_signup_access in 4.3
+            if (data.key === 'members_allow_free_signup') {
+                data.key = 'members_signup_access';
+                data.value = data.value ? 'all' : 'invite';
+                data.type = 'string';
             }
 
             return data;
@@ -197,6 +206,21 @@ class SettingsImporter extends BaseImporter {
         }
 
         _.each(this.dataToImport, (obj) => {
+            if (obj.key === 'labs' && obj.value) {
+                const inputLabsValue = JSON.parse(obj.value);
+                const filteredLabsValue = {};
+
+                for (const flag in inputLabsValue) {
+                    if (WRITABLE_KEYS_ALLOWLIST.includes(flag)) {
+                        filteredLabsValue[flag] = inputLabsValue[flag];
+                    }
+                }
+
+                // Overwrite the labs setting with our current defaults
+                // Ensures things that are enabled in new versions, are turned on
+                obj.value = JSON.stringify(_.assign({}, filteredLabsValue, labsDefaults));
+            }
+
             // CASE: we do not import "from address" for members settings as that needs to go via validation with magic link
             if ((obj.key === 'members_from_address') || (obj.key === 'members_support_address')) {
                 obj.value = null;

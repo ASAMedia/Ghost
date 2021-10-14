@@ -1,5 +1,6 @@
-const logging = require('../../../../../shared/logging');
+const logging = require('@tryghost/logging');
 const urlUtils = require('../../../../../shared/url-utils');
+const mobiledocLib = require('../../../../lib/mobiledoc');
 const {createIrreversibleMigration} = require('../../utils');
 
 module.exports = createIrreversibleMigration(async (knex) => {
@@ -32,7 +33,7 @@ module.exports = createIrreversibleMigration(async (knex) => {
                 ]);
 
             /* eslint-disable camelcase */
-            const mobiledoc = urlUtils.mobiledocToTransformReady(post.mobiledoc);
+            const mobiledoc = urlUtils.mobiledocToTransformReady(post.mobiledoc, {cardTransformers: mobiledocLib.cards});
             const custom_excerpt = urlUtils.htmlToTransformReady(post.custom_excerpt);
             const codeinjection_head = urlUtils.htmlToTransformReady(post.codeinjection_head);
             const codeinjection_foot = urlUtils.htmlToTransformReady(post.codeinjection_foot);
@@ -156,7 +157,7 @@ module.exports = createIrreversibleMigration(async (knex) => {
                     'mobiledoc'
                 ]);
 
-            const mobiledoc = urlUtils.mobiledocToTransformReady(snippet.mobiledoc);
+            const mobiledoc = urlUtils.mobiledocToTransformReady(snippet.mobiledoc, {cardTransformers: mobiledocLib.cards});
 
             await knex('snippets')
                 .transacting(trx)

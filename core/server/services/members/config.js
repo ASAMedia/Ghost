@@ -1,13 +1,12 @@
+const errors = require('@tryghost/errors');
+const tpl = require('@tryghost/tpl');
 const {URL} = require('url');
 const crypto = require('crypto');
 const createKeypair = require('keypair');
 const path = require('path');
 
-const COMPLIMENTARY_PLAN = {
-    name: 'Complimentary',
-    currency: 'usd',
-    interval: 'year',
-    amount: '0'
+const messages = {
+    incorrectKeyType: 'type must be one of "direct" or "connect".'
 };
 
 class MembersConfigProvider {
@@ -99,7 +98,7 @@ class MembersConfigProvider {
      */
     getStripeKeys(type) {
         if (type !== 'direct' && type !== 'connect') {
-            throw new Error();
+            throw new errors.IncorrectUsageError(tpl(messages.incorrectKeyType));
         }
 
         const secretKey = this._settingsCache.get(`stripe_${type === 'connect' ? 'connect_' : ''}secret_key`);
@@ -175,8 +174,6 @@ class MembersConfigProvider {
         }
 
         return {
-            publicKey: stripeApiKeys.publicKey,
-            secretKey: stripeApiKeys.secretKey,
             checkoutSuccessUrl: urls.checkoutSuccess,
             checkoutCancelUrl: urls.checkoutCancel,
             billingSuccessUrl: urls.billingSuccess,
@@ -186,17 +183,10 @@ class MembersConfigProvider {
                 id: this._settingsCache.get('members_stripe_webhook_id'),
                 secret: this._settingsCache.get('members_stripe_webhook_secret')
             },
-            enablePromoCodes: this._config.get('enableStripePromoCodes'),
             product: {
                 name: this._settingsCache.get('stripe_product_name')
             },
-            plans: [COMPLIMENTARY_PLAN].concat(this._settingsCache.get('stripe_plans') || []),
-            appInfo: {
-                name: 'Ghost',
-                partner_id: 'pp_partner_DKmRVtTs4j9pwZ',
-                version: this._ghostVersion.original,
-                url: 'https://ghost.org/'
-            }
+            plans: this._settingsCache.get('stripe_plans') || []
         };
     }
 
@@ -215,7 +205,25 @@ class MembersConfigProvider {
     }
 
     getAllowSelfSignup() {
-        return this._settingsCache.get('members_allow_free_signup');
+        // 'invite' and 'none' members signup access disables all signup
+        if (this._settingsCache.get('members_signup_access') !== 'all') {
+            return false;
+        }
+
+        // if stripe is not connected then selected plans mean nothing.
+        // disabling signup would be done by switching to "invite only" mode
+        if (!this.isStripeConnected()) {
+            return true;
+        }
+
+        // self signup must be available for free plan signup to work
+        const hasFreePlan = this._settingsCache.get('portal_plans').includes('free');
+        if (hasFreePlan) {
+            return true;
+        }
+
+        // signup access is enabled but there's no free plan, don't allow self signup
+        return false;
     }
 
     getTokenConfig() {

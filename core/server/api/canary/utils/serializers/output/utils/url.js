@@ -23,9 +23,15 @@ const forPost = (id, attrs, frame) => {
      */
     if (!localUtils.isContentAPI(frame)) {
         if (attrs.status !== 'published' && attrs.url.match(/\/404\//)) {
-            attrs.url = urlUtils.urlFor({
-                relativeUrl: urlUtils.urlJoin('/p', attrs.uuid, '/')
-            }, null, true);
+            if (attrs.posts_meta && attrs.posts_meta.email_only) {
+                attrs.url = urlUtils.urlFor({
+                    relativeUrl: urlUtils.urlJoin('/email', attrs.uuid, '/')
+                }, null, true);
+            } else {
+                attrs.url = urlUtils.urlFor({
+                    relativeUrl: urlUtils.urlJoin('/p', attrs.uuid, '/')
+                }, null, true);
+            }
         }
     }
 

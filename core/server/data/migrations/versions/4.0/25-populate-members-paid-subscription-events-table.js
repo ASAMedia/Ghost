@@ -1,7 +1,13 @@
 const {chunk} = require('lodash');
 const ObjectID = require('bson-objectid');
 const {createTransactionalMigration} = require('../../utils');
-const logging = require('../../../../../shared/logging');
+const logging = require('@tryghost/logging');
+const errors = require('@tryghost/errors');
+const tpl = require('@tryghost/tpl');
+
+const messages = {
+    unknownSubscriptionIntervalError: 'Unknown Subscription interval "{interval}" found.'
+};
 
 module.exports = createTransactionalMigration(
     async function up(knex) {
@@ -29,6 +35,20 @@ module.exports = createTransactionalMigration(
             if (interval === 'month') {
                 return amount;
             }
+
+            if (interval === 'week') {
+                return amount * 4;
+            }
+
+            if (interval === 'day') {
+                return amount * 30;
+            }
+
+            throw new errors.GhostError({
+                message: tpl(messages.unknownSubscriptionIntervalError , {
+                    interval
+                })
+            });
         }
 
         const allEvents = allSubscriptions.reduce((allEventsAcc, subscription) => {
@@ -36,11 +56,15 @@ module.exports = createTransactionalMigration(
                 return allEventsAcc;
             }
 
+            if (!['year', 'month', 'week', 'day'].includes(subscription.plan_interval)) {
+                return allEventsAcc;
+            }
+
             const events = [];
 
             if (subscription.status === 'trialing') {
                 const subscriptionCreatedEvent = {
-                    id: ObjectID.generate(),
+                    id: ObjectID().toHexString(),
                     member_id: subscription.member_id,
                     from_plan: null,
                     to_plan: subscription.plan_id,
@@ -52,7 +76,7 @@ module.exports = createTransactionalMigration(
                 events.push(subscriptionCreatedEvent);
             } else {
                 const subscriptionCreatedEvent = {
-                    id: ObjectID.generate(),
+                    id: ObjectID().toHexString(),
                     member_id: subscription.member_id,
                     from_plan: null,
                     to_plan: subscription.plan_id,
@@ -69,7 +93,7 @@ module.exports = createTransactionalMigration(
 
             if (subscription.status === 'canceled') {
                 const subscriptionCancelledEvent = {
-                    id: ObjectID.generate(),
+                    id: ObjectID().toHexString(),
                     member_id: subscription.member_id,
                     from_plan: subscription.plan_id,
                     to_plan: null,

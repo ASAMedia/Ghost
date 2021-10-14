@@ -1,5 +1,5 @@
 //@ts-check
-const debug = require('ghost-ignition').debug('api:canary:utils:serializers:output:members');
+const debug = require('@tryghost/debug')('api:canary:utils:serializers:output:members');
 const {unparse} = require('@tryghost/members-csv');
 
 module.exports = {
@@ -10,7 +10,9 @@ module.exports = {
     edit: createSerializer('edit', singleMember),
     add: createSerializer('add', singleMember),
     editSubscription: createSerializer('editSubscription', singleMember),
-
+    createSubscription: createSerializer('createSubscription', singleMember),
+    bulkDestroy: createSerializer('bulkDestroy', passthrough),
+    bulkEdit: createSerializer('bulkEdit', bulkAction),
     exportCSV: createSerializer('exportCSV', exportCSV),
 
     importCSV: createSerializer('importCSV', passthrough),
@@ -52,6 +54,29 @@ function singleMember(model, _apiConfig, frame) {
 }
 
 /**
+ * @param {object} bulkActionResult
+ * @param {APIConfig} _apiConfig
+ * @param {Frame} frame
+ *
+ * @returns {{bulk: SerializedBulkAction}}
+ */
+function bulkAction(bulkActionResult, _apiConfig, frame) {
+    return {
+        bulk: {
+            action: frame.data.action,
+            meta: {
+                stats: {
+                    successful: bulkActionResult.successful,
+                    unsuccessful: bulkActionResult.unsuccessful
+                },
+                errors: bulkActionResult.errors,
+                unsuccessfulData: bulkActionResult.unsuccessfulData
+            }
+        }
+    };
+}
+
+/**
  * @template PageMeta
  *
  * @param {{data: import('bookshelf').Model[], meta: PageMeta}} page
@@ -75,25 +100,13 @@ function exportCSV(page, _apiConfig, frame) {
  * @returns {SerializedMember}
  */
 function serializeMember(member, options) {
-    const json = member.toJSON(options);
+    const json = member.toJSON ? member.toJSON(options) : member;
 
-    let comped = false;
-    if (json.subscriptions) {
-        const hasCompedSubscription = !!json.subscriptions.find(
-            /**
-             * @param {SerializedMemberStripeSubscription} sub
-             */
-            function (sub) {
-                return sub.plan.nickname === 'Complimentary' && sub.status === 'active';
-            }
-        );
-        if (hasCompedSubscription) {
-            comped = true;
-        }
-    }
+    const comped = json.status === 'comped';
+
     const subscriptions = json.subscriptions || [];
 
-    return {
+    const serialized = {
         id: json.id,
         uuid: json.uuid,
         email: json.email,
@@ -113,6 +126,12 @@ function serializeMember(member, options) {
         email_recipients: json.email_recipients,
         status: json.status
     };
+
+    if (json.products) {
+        serialized.products = json.products;
+    }
+
+    return serialized;
 }
 
 /**
@@ -153,6 +172,7 @@ function createSerializer(debugString, serialize) {
  * @prop {string} updated_at
  * @prop {string[]} labels
  * @prop {SerializedMemberStripeSubscription[]} subscriptions
+ * @prop {SerializedMemberProduct[]=} products
  * @prop {string} avatar_image
  * @prop {boolean} comped
  * @prop {number} email_count
@@ -160,6 +180,13 @@ function createSerializer(debugString, serialize) {
  * @prop {number} email_open_rate
  * @prop {null|SerializedEmailRecipient[]} email_recipients
  * @prop {'free'|'paid'} status
+ */
+
+/**
+ * @typedef {Object} SerializedMemberProduct
+ * @prop {string} id
+ * @prop {string} name
+ * @prop {string} slug
  */
 
 /**
@@ -182,11 +209,16 @@ function createSerializer(debugString, serialize) {
  * @prop {null|string} customer.name
  * @prop {string} customer.email
  *
- * @prop {Object} plan
- * @prop {string} plan.id
- * @prop {string} plan.nickname
- * @prop {number} plan.amount
- * @prop {string} plan.currency
+ * @prop {Object} price
+ * @prop {string} price.id
+ * @prop {string} price.nickname
+ * @prop {number} price.amount
+ * @prop {string} price.interval
+ * @prop {string} price.currency
+ *
+ * @prop {Object} price.product
+ * @prop {string} price.product.id
+ * @prop {string} price.product.product_id
  */
 
 /**
@@ -229,6 +261,21 @@ function createSerializer(debugString, serialize) {
  * @prop {string} created_by
  * @prop {string} updated_at
  * @prop {string} updated_by
+ */
+
+/**
+ *
+ * @typedef {Object} SerializedBulkAction
+ *
+ * @prop {string} action
+ *
+ * @prop {object} meta
+ * @prop {object[]} meta.unsuccessfulData
+ * @prop {Error[]} meta.errors
+ * @prop {object} meta.stats
+ *
+ * @prop {number} meta.stats.successful
+ * @prop {number} meta.stats.unsuccessful
  */
 
 /**

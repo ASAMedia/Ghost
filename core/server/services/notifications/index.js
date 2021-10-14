@@ -1,6 +1,10 @@
-const settingsCache = require('../settings/cache');
-const {i18n} = require('../../lib/common');
-const ghostVersion = require('../../lib/ghost-version');
+const settingsCache = require('../../../shared/settings-cache');
+const ghostVersion = require('@tryghost/version');
 const Notifications = require('./notifications');
+const models = require('../../models');
 
-module.exports.notifications = new Notifications({settingsCache, i18n, ghostVersion});
+module.exports.notifications = new Notifications({
+    settingsCache,
+    ghostVersion: ghostVersion.full,
+    SettingsModel: models.Settings
+});

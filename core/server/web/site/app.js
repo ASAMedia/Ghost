@@ -1,4 +1,4 @@
-const debug = require('ghost-ignition').debug('web:site:app');
+const debug = require('@tryghost/debug')('frontend');
 const path = require('path');
 const express = require('../../../shared/express');
 const cors = require('cors');
@@ -13,9 +13,10 @@ const urlService = require('../../../frontend/services/url');
 const urlUtils = require('../../../shared/url-utils');
 const sitemapHandler = require('../../../frontend/services/sitemap/handler');
 const appService = require('../../../frontend/services/apps');
-const themeService = require('../../../frontend/services/themes');
-const themeMiddleware = themeService.middleware;
-const membersMiddleware = require('../../services/members').middleware;
+const themeEngine = require('../../../frontend/services/theme-engine');
+const themeMiddleware = themeEngine.middleware;
+const membersService = require('../../services/members');
+const offersService = require('../../services/offers');
 const siteRoutes = require('./routes');
 const shared = require('../shared');
 const mw = require('./middleware');
@@ -73,7 +74,7 @@ function SiteRouter(req, res, next) {
 }
 
 module.exports = function setupSiteApp(options = {}) {
-    debug('Site setup start');
+    debug('Site setup start', options);
 
     const siteApp = express('site');
 
@@ -83,6 +84,8 @@ module.exports = function setupSiteApp(options = {}) {
 
     // enable CORS headers (allows admin client to hit front-end when configured on separate URLs)
     siteApp.use(cors(corsOptionsDelegate));
+
+    siteApp.use(offersService.middleware);
 
     // you can extend Ghost with a custom redirects file
     // see https://github.com/TryGhost/Ghost/issues/7707
@@ -126,18 +129,15 @@ module.exports = function setupSiteApp(options = {}) {
     // We do this here, at the top level, because helpers require so much stuff.
     // Moving this to being inside themes, where it probably should be requires the proxy to be refactored
     // Else we end up with circular dependencies
-    themeService.loadCoreHelpers();
-    debug('Helpers done');
+    // themeEngine.loadCoreHelpers();
+    // themeEngine.registerHandlebarsHelpers();
+    // debug('Helpers done');
 
     // Global handling for member session, ensures a member is logged in to the frontend
-    siteApp.use(membersMiddleware.loadMemberSession);
+    siteApp.use(membersService.middleware.loadMemberSession);
 
-    // Theme middleware
-    // This should happen AFTER any shared assets are served, as it only changes things to do with templates
-    // At this point the active theme object is already updated, so we have the right path, so it can probably
-    // go after staticTheme() as well, however I would really like to simplify this and be certain
-    siteApp.use(themeMiddleware);
-    debug('Themes done');
+    // /member/.well-known/* serves files (e.g. jwks.json) so it needs to be mounted before the prettyUrl mw to avoid trailing slashes
+    siteApp.use('/members/.well-known', (req, res, next) => membersService.api.middleware.wellKnown(req, res, next));
 
     // setup middleware for internal apps
     // @TODO: refactor this to be a proper app middleware hook for internal apps
@@ -152,6 +152,11 @@ module.exports = function setupSiteApp(options = {}) {
     // Theme static assets/files
     siteApp.use(mw.staticTheme());
     debug('Static content done');
+
+    // Theme middleware
+    // This should happen AFTER any shared assets are served, as it only changes things to do with templates
+    siteApp.use(themeMiddleware);
+    debug('Themes done');
 
     // Serve robots.txt if not found in theme
     siteApp.use(mw.servePublicFile('robots.txt', 'text/plain', constants.ONE_HOUR_S));
@@ -201,12 +206,12 @@ module.exports = function setupSiteApp(options = {}) {
     return siteApp;
 };
 
-module.exports.reload = () => {
+module.exports.reload = ({apiVersion}) => {
     // https://github.com/expressjs/express/issues/2596
-    router = siteRoutes({start: themeService.getApiVersion()});
+    router = siteRoutes({start: true, apiVersion});
     Object.setPrototypeOf(SiteRouter, router);
 
-    // re-initialse apps (register app routers, because we have re-initialised the site routers)
+    // re-initialize apps (register app routers, because we have re-initialized the site routers)
     appService.init();
 
     // connect routers and resources again

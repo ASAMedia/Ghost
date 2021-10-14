@@ -1,5 +1,5 @@
 //@ts-check
-const debug = require('ghost-ignition').debug('api:v3:utils:serializers:output:members');
+const debug = require('@tryghost/debug')('api:v3:utils:serializers:output:members');
 const {unparse} = require('@tryghost/members-csv');
 
 module.exports = {
@@ -78,17 +78,6 @@ function serializeMember(member, options) {
         stripe = {
             subscriptions: json.subscriptions
         };
-        const hasCompedSubscription = !!json.subscriptions.find(
-            /**
-             * @param {SerializedMemberStripeSubscription} sub
-             */
-            function (sub) {
-                return sub.plan.nickname === 'Complimentary' && sub.status === 'active';
-            }
-        );
-        if (hasCompedSubscription) {
-            comped = true;
-        }
     }
 
     return {

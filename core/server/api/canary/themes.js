@@ -1,14 +1,12 @@
-const fs = require('fs-extra');
-const os = require('os');
-const path = require('path');
-const security = require('@tryghost/security');
-const {events} = require('../../lib/common');
-const themeService = require('../../../frontend/services/themes');
+const themeService = require('../../services/themes');
 const limitService = require('../../services/limits');
 const models = require('../../models');
 const request = require('../../lib/request');
 const errors = require('@tryghost/errors/lib/errors');
 const i18n = require('../../lib/common/i18n');
+
+// Used to emit theme.uploaded which is used in core/server/analytics-events
+const events = require('../../lib/common/events');
 
 module.exports = {
     docName: 'themes',
@@ -16,7 +14,7 @@ module.exports = {
     browse: {
         permissions: true,
         query() {
-            return themeService.getJSON();
+            return themeService.api.getJSON();
         }
     },
 
@@ -35,21 +33,26 @@ module.exports = {
             }
         },
         permissions: true,
-        query(frame) {
+        async query(frame) {
             let themeName = frame.options.name;
+
+            if (limitService.isLimited('customThemes')) {
+                await limitService.errorIfWouldGoOverLimit('customThemes', {value: themeName});
+            }
+
             const newSettings = [{
                 key: 'active_theme',
                 value: themeName
             }];
 
-            return themeService.activate(themeName)
+            return themeService.api.activate(themeName)
                 .then((checkedTheme) => {
                     // @NOTE: we use the model, not the API here, as we don't want to trigger permissions
                     return models.Settings.edit(newSettings, frame.options)
                         .then(() => checkedTheme);
                 })
                 .then((checkedTheme) => {
-                    return themeService.getJSON(themeName, checkedTheme);
+                    return themeService.api.getJSON(themeName, checkedTheme);
                 });
         }
     },
@@ -61,12 +64,14 @@ module.exports = {
             'ref'
         ],
         validation: {
-            source: {
-                required: true,
-                values: ['github']
-            },
-            ref: {
-                required: true
+            options: {
+                source: {
+                    required: true,
+                    values: ['github']
+                },
+                ref: {
+                    required: true
+                }
             }
         },
         permissions: {
@@ -74,61 +79,15 @@ module.exports = {
         },
         async query(frame) {
             if (frame.options.source === 'github') {
-                const [org, repo] = frame.options.ref.toLowerCase().split('/');
+                const {theme, themeOverridden} = await themeService.api.installFromGithub(frame.options.ref);
 
-                if (limitService.isLimited('customThemes') && org.toLowerCase() !== 'tryghost') {
-                    await limitService.errorIfWouldGoOverLimit('customThemes');
+                if (themeOverridden) {
+                    this.headers.cacheInvalidate = true;
                 }
 
-                // omit /:ref so we fetch the default branch
-                const zipUrl = `https://api.github.com/repos/${org}/${repo}/zipball`;
-                const zipName = `${repo}.zip`;
+                events.emit('theme.uploaded', {name: theme.name});
 
-                // store zip in a unique temporary folder to avoid conflicts
-                const downloadBase = path.join(os.tmpdir(), security.identifier.uid(10));
-                const downloadPath = path.join(downloadBase, zipName);
-
-                await fs.ensureDir(downloadBase);
-
-                try {
-                    // download zip file
-                    const response = await request(zipUrl, {
-                        followRedirect: true,
-                        headers: {
-                            accept: 'application/vnd.github.v3+json'
-                        },
-                        encoding: null
-                    });
-
-                    await fs.writeFile(downloadPath, response.body);
-
-                    // install theme from zip
-                    const zip = {
-                        path: downloadPath,
-                        name: zipName
-                    };
-                    const {theme, themeOverridden} = await themeService.storage.setFromZip(zip);
-
-                    if (themeOverridden) {
-                        this.headers.cacheInvalidate = true;
-                    }
-
-                    events.emit('theme.uploaded', {name: theme.name});
-
-                    return theme;
-                } catch (e) {
-                    if (e.statusCode && e.statusCode === 404) {
-                        return Promise.reject(new errors.BadRequestError({
-                            message: i18n.t('errors.api.themes.repoDoesNotExist'),
-                            context: zipUrl
-                        }));
-                    }
-
-                    throw e;
-                } finally {
-                    // clean up tmp dir with downloaded file
-                    fs.remove(downloadBase);
-                }
+                return theme;
             }
         }
     },
@@ -140,7 +99,8 @@ module.exports = {
         },
         async query(frame) {
             if (limitService.isLimited('customThemes')) {
-                await limitService.errorIfWouldGoOverLimit('customThemes');
+                // Sending a bad string to make sure it fails (empty string isn't valid)
+                await limitService.errorIfWouldGoOverLimit('customThemes', {value: '.'});
             }
 
             // @NOTE: consistent filename uploads
@@ -151,7 +111,7 @@ module.exports = {
                 name: frame.file.originalname
             };
 
-            return themeService.storage.setFromZip(zip)
+            return themeService.api.setFromZip(zip)
                 .then(({theme, themeOverridden}) => {
                     if (themeOverridden) {
                         // CASE: clear cache
@@ -180,7 +140,7 @@ module.exports = {
         query(frame) {
             let themeName = frame.options.name;
 
-            return themeService.storage.getZip(themeName);
+            return themeService.api.getZip(themeName);
         }
     },
 
@@ -203,7 +163,7 @@ module.exports = {
         query(frame) {
             let themeName = frame.options.name;
 
-            return themeService.storage.destroy(themeName);
+            return themeService.api.destroy(themeName);
         }
     }
 };

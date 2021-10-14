@@ -47,6 +47,19 @@ const mapPost = (model, frame) => {
         gating.forPost(jsonModel, frame);
     }
 
+    // Transforms post/page metadata to flat structure
+    let metaAttrs = _.keys(_.omit(postsMetaSchema, ['id', 'post_id']));
+    _(metaAttrs).filter((k) => {
+        return (!frame.options.columns || (frame.options.columns && frame.options.columns.includes(k)));
+    }).each((attr) => {
+        // NOTE: the default of `email_only` is `false` which is why we default to `false` instead of `null`
+        //       The undefined value is possible because `posts_meta` table is lazily created only one of the
+        //       values is assigned.
+        const defaultValue = (attr === 'email_only') ? false : null;
+        jsonModel[attr] = _.get(jsonModel.posts_meta, attr) || defaultValue;
+    });
+    delete jsonModel.posts_meta;
+
     clean.post(jsonModel, frame);
 
     if (frame.options && frame.options.withRelated) {
@@ -72,15 +85,6 @@ const mapPost = (model, frame) => {
         });
     }
 
-    // Transforms post/page metadata to flat structure
-    let metaAttrs = _.keys(_.omit(postsMetaSchema, ['id', 'post_id']));
-    _(metaAttrs).filter((k) => {
-        return (!frame.options.columns || (frame.options.columns && frame.options.columns.includes(k)));
-    }).each((attr) => {
-        jsonModel[attr] = _.get(jsonModel.posts_meta, attr) || null;
-    });
-    delete jsonModel.posts_meta;
-
     return jsonModel;
 };
 
@@ -89,6 +93,7 @@ const mapPage = (model, frame) => {
 
     delete jsonModel.email_subject;
     delete jsonModel.email_recipient_filter;
+    delete jsonModel.email_only;
 
     return jsonModel;
 };

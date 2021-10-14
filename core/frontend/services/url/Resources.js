@@ -1,10 +1,12 @@
 const _ = require('lodash');
 const Promise = require('bluebird');
-const debug = require('ghost-ignition').debug('services:url:resources');
+const debug = require('@tryghost/debug')('services:url:resources');
 const Resource = require('./Resource');
 const config = require('../../../shared/config');
 const models = require('../../../server/models');
-const {events} = require('../../../server/lib/common');
+
+// This listens to all manner of model events to find new content that needs a URL...
+const events = require('../../../server/lib/common/events');
 
 /**
  * @description At the moment the resources class is directly responsible for data population
@@ -49,10 +51,11 @@ class Resources {
      */
     _initResourceConfig() {
         if (!_.isEmpty(this.resourcesConfig)) {
-            return this.resourceConfig;
+            return;
         }
 
-        this.resourcesAPIVersion = require('../themes').getApiVersion();
+        const bridge = require('../../../bridge');
+        this.resourcesAPIVersion = bridge.getFrontendApiVersion();
         this.resourcesConfig = require(`./configs/${this.resourcesAPIVersion}`);
     }
 

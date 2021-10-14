@@ -1,4 +1,4 @@
-const debug = require('ghost-ignition').debug('importer:base');
+const debug = require('@tryghost/debug')('importer:base');
 const _ = require('lodash');
 const Promise = require('bluebird');
 const ObjectId = require('bson-objectid');
@@ -87,7 +87,7 @@ class Base {
 
     generateIdentifier() {
         _.each(this.dataToImport, (obj) => {
-            const newId = ObjectId.generate();
+            const newId = ObjectId().toHexString();
 
             if (obj.id) {
                 this.originalIdMap[newId] = obj.id;

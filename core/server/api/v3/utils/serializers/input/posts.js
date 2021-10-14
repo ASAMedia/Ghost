@@ -1,5 +1,5 @@
 const _ = require('lodash');
-const debug = require('ghost-ignition').debug('api:v3:utils:serializers:input:posts');
+const debug = require('@tryghost/debug')('api:v3:utils:serializers:input:posts');
 const mapNQLKeyValues = require('@nexes/nql').utils.mapKeyValues;
 const url = require('./utils/url');
 const slugFilterOrder = require('./utils/slug-filter-order');
@@ -99,6 +99,15 @@ const forceStatusFilter = (frame) => {
         frame.options.filter = 'status:[draft,published,scheduled]';
     } else if (!frame.options.filter.match(/status:/)) {
         frame.options.filter = `(${frame.options.filter})+status:[draft,published,scheduled]`;
+    }
+};
+
+const transformLegacyEmailRecipientFilters = (frame) => {
+    if (frame.options.email_recipient_filter === 'free') {
+        frame.options.email_recipient_filter = 'status:free';
+    }
+    if (frame.options.email_recipient_filter === 'paid') {
+        frame.options.email_recipient_filter = 'status:-free';
     }
 };
 
@@ -204,6 +213,7 @@ module.exports = {
             });
         }
 
+        transformLegacyEmailRecipientFilters(frame);
         handlePostsMeta(frame);
         defaultFormat(frame);
         defaultRelations(frame);
@@ -213,6 +223,7 @@ module.exports = {
         debug('edit');
         this.add(apiConfig, frame, {add: false});
 
+        transformLegacyEmailRecipientFilters(frame);
         handlePostsMeta(frame);
         forceStatusFilter(frame);
         forcePageFilter(frame);

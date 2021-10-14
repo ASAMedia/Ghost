@@ -76,6 +76,7 @@ const post = (attrs, frame) => {
         // @TODO: https://github.com/TryGhost/Ghost/issues/10335
         // delete attrs.page;
         delete attrs.status;
+        delete attrs.email_only;
 
         // We are standardising on returning null from the Content API for any empty values
         if (attrs.twitter_title === '') {
@@ -96,6 +97,11 @@ const post = (attrs, frame) => {
         if (attrs.og_description === '') {
             attrs.og_description = null;
         }
+        // Note: If visibility is set to a specific filter in v4, we want to return paid in v3
+        if (attrs.visibility && !['public', 'members', 'paid'].includes(attrs.visibility)) {
+            attrs.visibility = 'paid';
+        }
+
         // NOTE: the visibility column has to be always present in Content API response to perform content gating
         if (columns && columns.includes('visibility') && fields && !fields.includes('visibility')) {
             delete attrs.visibility;
@@ -123,6 +129,8 @@ const post = (attrs, frame) => {
     delete attrs.locale;
     delete attrs.author;
     delete attrs.type;
+    delete attrs.feature_image_alt;
+    delete attrs.feature_image_caption;
 
     return attrs;
 };

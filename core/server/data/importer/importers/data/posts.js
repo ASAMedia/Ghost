@@ -1,9 +1,9 @@
-const debug = require('ghost-ignition').debug('importer:posts');
+const debug = require('@tryghost/debug')('importer:posts');
 const _ = require('lodash');
 const uuid = require('uuid');
 const BaseImporter = require('./base');
 const mobiledocLib = require('../../../../lib/mobiledoc');
-const validation = require('../../../validation');
+const validator = require('@tryghost/validator');
 const postsMetaSchema = require('../../../schema').tables.posts_meta;
 const metaAttrs = _.keys(_.omit(postsMetaSchema, ['id']));
 
@@ -20,7 +20,7 @@ class PostsImporter extends BaseImporter {
 
     sanitizeAttributes() {
         _.each(this.dataToImport, (obj) => {
-            if (!validation.validator.isUUID(obj.uuid || '')) {
+            if (!validator.isUUID(obj.uuid || '')) {
                 obj.uuid = uuid.v4();
             }
 
@@ -50,7 +50,9 @@ class PostsImporter extends BaseImporter {
      */
     sanitizePostsMeta(model) {
         let postsMetaFromFile = _.find(this.requiredFromFile.posts_meta, {post_id: model.id}) || _.pick(model, metaAttrs);
-        let postsMetaData = Object.assign({}, _.mapValues(postsMetaSchema, () => null), postsMetaFromFile);
+        let postsMetaData = Object.assign({}, _.mapValues(postsMetaSchema, (value) => {
+            return Reflect.has(value, 'defaultTo') ? value.defaultTo : null;
+        }), postsMetaFromFile);
         model.posts_meta = postsMetaData;
         _.each(metaAttrs, (attr) => {
             delete model[attr];

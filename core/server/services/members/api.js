@@ -1,6 +1,7 @@
-const settingsCache = require('../settings/cache');
+const stripeService = require('../stripe');
+const settingsCache = require('../../../shared/settings-cache');
 const MembersApi = require('@tryghost/members-api');
-const logging = require('../../../shared/logging');
+const logging = require('@tryghost/logging');
 const mail = require('../mail');
 const models = require('../../models');
 const signinEmail = require('./emails/signin');
@@ -9,6 +10,8 @@ const subscribeEmail = require('./emails/subscribe');
 const updateEmail = require('./emails/updateEmail');
 const SingleUseTokenProvider = require('./SingleUseTokenProvider');
 const urlUtils = require('../../../shared/url-utils');
+const labsService = require('../../../shared/labs');
+const offersService = require('../offers');
 
 const MAGIC_LINK_TOKEN_VALIDITY = 24 * 60 * 60 * 1000;
 
@@ -174,9 +177,18 @@ function createApiInstance(config) {
             MemberLoginEvent: models.MemberLoginEvent,
             MemberEmailChangeEvent: models.MemberEmailChangeEvent,
             MemberPaymentEvent: models.MemberPaymentEvent,
-            MemberStatusEvent: models.MemberStatusEvent
+            MemberStatusEvent: models.MemberStatusEvent,
+            MemberProductEvent: models.MemberProductEvent,
+            MemberAnalyticEvent: models.MemberAnalyticEvent,
+            StripeProduct: models.StripeProduct,
+            StripePrice: models.StripePrice,
+            Product: models.Product,
+            Settings: models.Settings
         },
-        logger: logging
+        stripeAPIService: stripeService.api,
+        logger: logging,
+        offersAPI: offersService.api,
+        labsService: labsService
     });
 
     return membersApiInstance;

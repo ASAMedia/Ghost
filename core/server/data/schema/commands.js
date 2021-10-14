@@ -1,10 +1,17 @@
 const _ = require('lodash');
 const Promise = require('bluebird');
-const {i18n} = require('../../lib/common');
-const logging = require('../../../shared/logging');
+const logging = require('@tryghost/logging');
+const errors = require('@tryghost/errors');
+const tpl = require('@tryghost/tpl');
 const db = require('../db');
 const schema = require('./schema');
 const clients = require('./clients');
+
+const messages = {
+    hasPrimaryKeySQLiteError: 'Must use hasPrimaryKeySQLite on an SQLite3 database',
+    hasForeignSQLite3: 'Must use hasForeignSQLite3 on an SQLite3 database',
+    noSupportForDatabase: 'No support for database client {client}'
+};
 
 function addTableColumn(tableName, table, columnName, columnSpec = schema[tableName][columnName]) {
     let column;
@@ -121,9 +128,9 @@ async function dropUnique(tableName, columns, transaction) {
  * Checks if a foreign key exists in a table over the given columns.
  *
  * @param {Object} configuration - contains all configuration for this function
- * @param {string} configuration.fromTableName - name of the table to add the foreign key to
+ * @param {string} configuration.fromTable - name of the table to add the foreign key to
  * @param {string} configuration.fromColumn - column of the table to add the foreign key to
- * @param {string} configuration.toTableName - name of the table to point the foreign key to
+ * @param {string} configuration.toTable - name of the table to point the foreign key to
  * @param {string} configuration.toColumn - column of the table to point the foreign key to
  * @param {import('knex')} configuration.transaction - connection object containing knex reference
  */
@@ -132,7 +139,9 @@ async function hasForeignSQLite({fromTable, fromColumn, toTable, toColumn, trans
     const client = knex.client.config.client;
 
     if (client !== 'sqlite3') {
-        throw new Error('Must use hasForeignSQLite3 on an SQLite3 database');
+        throw new errors.GhostError({
+            message: tpl(messages.hasForeignSQLite3)
+        });
     }
 
     const foreignKeys = await knex.raw(`PRAGMA foreign_key_list('${fromTable}');`);
@@ -146,9 +155,9 @@ async function hasForeignSQLite({fromTable, fromColumn, toTable, toColumn, trans
  * Adds a foreign key to a table.
  *
  * @param {Object} configuration - contains all configuration for this function
- * @param {string} configuration.fromTableName - name of the table to add the foreign key to
+ * @param {string} configuration.fromTable - name of the table to add the foreign key to
  * @param {string} configuration.fromColumn - column of the table to add the foreign key to
- * @param {string} configuration.toTableName - name of the table to point the foreign key to
+ * @param {string} configuration.toTable - name of the table to point the foreign key to
  * @param {string} configuration.toColumn - column of the table to point the foreign key to
  * @param {Boolean} configuration.cascadeDelete - adds the "on delete cascade" option if true
  * @param {import('knex')} configuration.transaction - connection object containing knex reference
@@ -200,9 +209,9 @@ async function addForeign({fromTable, fromColumn, toTable, toColumn, cascadeDele
  * Drops a foreign key from a table.
  *
  * @param {Object} configuration - contains all configuration for this function
- * @param {string} configuration.fromTableName - name of the table to add the foreign key to
+ * @param {string} configuration.fromTable - name of the table to add the foreign key to
  * @param {string} configuration.fromColumn - column of the table to add the foreign key to
- * @param {string} configuration.toTableName - name of the table to point the foreign key to
+ * @param {string} configuration.toTable - name of the table to point the foreign key to
  * @param {string} configuration.toColumn - column of the table to point the foreign key to
  * @param {import('knex')} configuration.transaction - connection object containing knex reference
  */
@@ -249,14 +258,16 @@ async function dropForeign({fromTable, fromColumn, toTable, toColumn, transactio
  * Checks if primary key index exists in a table over the given columns.
  *
  * @param {string} tableName - name of the table to check primary key constraint on
- * @param {import('knex')} transaction - connnection object containing knex reference
+ * @param {import('knex')} transaction - connection object containing knex reference
  */
 async function hasPrimaryKeySQLite(tableName, transaction) {
     const knex = (transaction || db.knex);
     const client = knex.client.config.client;
 
     if (client !== 'sqlite3') {
-        throw new Error('Must use hasPrimaryKeySQLite on an SQLite3 database');
+        throw new errors.GhostError({
+            message: tpl(messages.hasPrimaryKeySQLiteError)
+        });
     }
 
     const rawConstraints = await knex.raw(`PRAGMA index_list('${tableName}');`);
@@ -270,7 +281,7 @@ async function hasPrimaryKeySQLite(tableName, transaction) {
  *
  * @param {string} tableName - name of the table to add primaykey  constraint to
  * @param {string|[string]} columns - column(s) to form primary key constraint with
- * @param {import('knex')} transaction - connnection object containing knex reference
+ * @param {import('knex')} transaction - connection object containing knex reference
  */
 async function addPrimaryKey(tableName, columns, transaction) {
     const isSQLite = db.knex.client.config.client === 'sqlite3';
@@ -332,7 +343,7 @@ function getTables(transaction) {
         return clients[client].getTables(transaction);
     }
 
-    return Promise.reject(i18n.t('notices.data.utils.index.noSupportForDatabase', {client: client}));
+    return Promise.reject(tpl(messages.noSupportForDatabase, {client: client}));
 }
 
 function getIndexes(table, transaction) {
@@ -342,7 +353,7 @@ function getIndexes(table, transaction) {
         return clients[client].getIndexes(table, transaction);
     }
 
-    return Promise.reject(i18n.t('notices.data.utils.index.noSupportForDatabase', {client: client}));
+    return Promise.reject(tpl(messages.noSupportForDatabase, {client: client}));
 }
 
 function getColumns(table, transaction) {
@@ -352,7 +363,7 @@ function getColumns(table, transaction) {
         return clients[client].getColumns(table);
     }
 
-    return Promise.reject(i18n.t('notices.data.utils.index.noSupportForDatabase', {client: client}));
+    return Promise.reject(tpl(messages.noSupportForDatabase, {client: client}));
 }
 
 function checkTables(transaction) {
@@ -406,5 +417,8 @@ module.exports = {
     addColumn: addColumn,
     dropColumn: dropColumn,
     getColumns: getColumns,
-    createColumnMigration
+    createColumnMigration,
+    // NOTE: below are exposed for testing purposes only
+    _hasForeignSQLite: hasForeignSQLite,
+    _hasPrimaryKeySQLite: hasPrimaryKeySQLite
 };

@@ -1,9 +1,11 @@
 const _ = require('lodash');
 const Analytics = require('analytics-node');
 const config = require('../shared/config');
-const logging = require('../shared/logging');
+const logging = require('@tryghost/logging');
 const sentry = require('../shared/sentry');
-const {events} = require('./lib/common');
+
+// Listens to model events to layer on analytics - also uses the "fake" theme.uploaded event from the theme API
+const events = require('./lib/common/events');
 
 module.exports.init = function () {
     const analytics = new Analytics(config.get('segment:key'));

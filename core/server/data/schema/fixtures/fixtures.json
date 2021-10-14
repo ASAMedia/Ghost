@@ -1,6 +1,15 @@
 {
     "models": [
         {
+            "name": "Product",
+            "entries": [
+                {
+                    "name":             "Default Product",
+                    "slug":             "default-product"
+                }
+            ]
+        },
+        {
             "name": "Tag",
             "entries": [
                 {
@@ -370,6 +379,31 @@
                     "object_type": "member"
                 },
                 {
+                    "name": "Browse Products",
+                    "action_type": "browse",
+                    "object_type": "product"
+                },
+                {
+                    "name": "Read Products",
+                    "action_type": "read",
+                    "object_type": "product"
+                },
+                {
+                    "name": "Edit Products",
+                    "action_type": "edit",
+                    "object_type": "product"
+                },
+                {
+                    "name": "Add Products",
+                    "action_type": "add",
+                    "object_type": "product"
+                },
+                {
+                    "name": "Delete Products",
+                    "action_type": "destroy",
+                    "object_type": "product"
+                },
+                {
                     "name": "Publish posts",
                     "action_type": "publish",
                     "object_type": "post"
@@ -468,6 +502,41 @@
                     "name": "Delete snippets",
                     "action_type": "destroy",
                     "object_type": "snippet"
+                },
+                {
+                    "name": "Browse offers",
+                    "action_type": "browse",
+                    "object_type": "offer"
+                },
+                {
+                    "name": "Read offers",
+                    "action_type": "read",
+                    "object_type": "offer"
+                },
+                {
+                    "name": "Edit offers",
+                    "action_type": "edit",
+                    "object_type": "offer"
+                },
+                {
+                    "name": "Add offers",
+                    "action_type": "add",
+                    "object_type": "offer"
+                },
+                {
+                    "name": "Reset all passwords",
+                    "action_type": "resetAllPasswords",
+                    "object_type": "authentication"
+                },
+                {
+                    "name": "Browse custom theme settings",
+                    "action_type": "browse",
+                    "object_type": "custom_theme_setting"
+                },
+                {
+                    "name": "Edit custom theme settings",
+                    "action_type": "edit",
+                    "object_type": "custom_theme_setting"
                 }
             ]
         },
@@ -600,7 +669,7 @@
                 {
                     "title": "About this site",
                     "slug": "about",
-                    "mobiledoc": "{\"version\":\"0.3.1\",\"atoms\":[],\"cards\":[],\"markups\":[[\"strong\"],[\"code\"]],\"sections\":[[1,\"p\",[[0,[],0,\"Unlike posts, pages in Ghost don't appear the main feed. They're separate, individual pages which only show up when you link to them. Great for content which is important, but separate from your usual posts.\"]]],[1,\"p\",[[0,[],0,\"An about page is a great example of one you might want to set up early on so people can find out more about you, and what you do. Why should people subscribe to your site and become a member? Details help!\"]]],[1,\"blockquote\",[[0,[0],1,\"Tip: \"],[0,[],0,\"If you're reading any post or page on your site and you notice something you want to edit, you can add \"],[0,[1],1,\"/edit\"],[0,[],0,\" to the end of the URL – and you'll be taken directly to the Ghost editor.\"]]],[1,\"p\",[[0,[],0,\"Now tell the world what your site is all about.\"]]]],\"ghostVersion\":\"4.0\"}",
+                    "mobiledoc": "{\"version\":\"0.3.1\",\"atoms\":[],\"cards\":[],\"markups\":[[\"strong\"],[\"code\"]],\"sections\":[[1,\"p\",[[0,[],0,\"Unlike posts, pages in Ghost don't appear in the main feed. They're separate, individual pages which only show up when you link to them. Great for content which is important, but separate from your usual posts.\"]]],[1,\"p\",[[0,[],0,\"An about page is a great example of one you might want to set up early on so people can find out more about you, and what you do. Why should people subscribe to your site and become a member? Details help!\"]]],[1,\"blockquote\",[[0,[0],1,\"Tip: \"],[0,[],0,\"If you're reading any post or page on your site and you notice something you want to edit, you can add \"],[0,[1],1,\"/edit\"],[0,[],0,\" to the end of the URL – and you'll be taken directly to the Ghost editor.\"]]],[1,\"p\",[[0,[],0,\"Now tell the world what your site is all about.\"]]]],\"ghostVersion\":\"4.0\"}",
                     "feature_image": null,
                     "featured": false,
                     "type": "page",
@@ -709,11 +778,16 @@
                     "api_key": "all",
                     "action": "all",
                     "member": "all",
+                    "product": "all",
                     "label": "all",
                     "email_preview": "all",
                     "email": "all",
                     "member_signin_url": "read",
-                    "snippet": "all"
+                    "snippet": "all",
+                    "custom_theme_setting": "all",
+                    "offer": "all",
+                    "authentication": "resetAllPasswords",
+                    "members_stripe_connect": "auth"
                 },
                 "DB Backup Integration": {
                     "db": "all"
@@ -753,7 +827,9 @@
                     "theme": ["browse"],
                     "email_preview": "all",
                     "email": "all",
-                    "snippet": "all"
+                    "snippet": "all",
+                    "label": ["browse", "read"],
+                    "product": ["browse", "read"]
                 },
                 "Author": {
                     "post": ["browse", "read", "add"],
@@ -765,7 +841,8 @@
                     "theme": ["browse"],
                     "email_preview": "read",
                     "email": "read",
-                    "snippet": ["browse", "read"]
+                    "snippet": ["browse", "read"],
+                    "product": ["browse", "read"]
                 },
                 "Contributor": {
                     "post": ["browse", "read", "add"],

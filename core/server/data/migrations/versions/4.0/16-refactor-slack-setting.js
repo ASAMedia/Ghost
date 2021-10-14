@@ -1,6 +1,6 @@
 const ObjectId = require('bson-objectid').default;
 const {createIrreversibleMigration} = require('../../utils');
-const logging = require('../../../../../shared/logging');
+const logging = require('@tryghost/logging');
 
 module.exports = createIrreversibleMigration(async (knex) => {
     logging.info('Populating slack_url and slack_username setting values');
@@ -55,7 +55,7 @@ module.exports = createIrreversibleMigration(async (knex) => {
 
         await knex('settings')
             .insert({
-                id: ObjectId.generate(),
+                id: ObjectId().toHexString(),
                 key: 'slack_url',
                 group: 'slack',
                 type: 'string',
@@ -73,7 +73,7 @@ module.exports = createIrreversibleMigration(async (knex) => {
 
         await knex('settings')
             .insert({
-                id: ObjectId.generate(),
+                id: ObjectId().toHexString(),
                 key: 'slack_username',
                 group: 'slack',
                 type: 'string',
