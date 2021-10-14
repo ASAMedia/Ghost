@@ -1,9 +1,6 @@
 const themeService = require('../../services/themes');
 const limitService = require('../../services/limits');
 const models = require('../../models');
-const request = require('../../lib/request');
-const errors = require('@tryghost/errors/lib/errors');
-const i18n = require('../../lib/common/i18n');
 
 // Used to emit theme.uploaded which is used in core/server/analytics-events
 const events = require('../../lib/common/events');

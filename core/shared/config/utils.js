@@ -28,37 +28,14 @@ const makePathsAbsolute = function makePathsAbsolute(nconf, obj, parent) {
 /**
  * we can later support setting folder names via custom config values
  */
-exports.getContentPath = function getContentPath(type) {
-    switch (type) {
-    case 'root':
-        return path.join(this.get('paths:contentPath'), '../');
-    case 'images':
-        return path.join(this.get('paths:contentPath'), 'images/');
-    case 'files':
-        return path.join(this.get('paths:contentPath'), 'files/');
-    case 'timetables':
-        return path.join(this.get('paths:contentPath'), 'timetables/');
-    case 'themes':
-        return path.join(this.get('paths:contentPath'), 'themes/');
-    case 'adapters':
-        return path.join(this.get('paths:contentPath'), 'adapters/');
-    case 'logs':
-        return path.join(this.get('paths:contentPath'), 'logs/');
-    case 'data':
-        return path.join(this.get('paths:contentPath'), 'data/');
-    case 'settings':
-        return path.join(this.get('paths:contentPath'), 'settings/');
-    default:
-        throw new Error('getContentPath was called with: ' + type);
-    }
-};
+
 
 /**
  * @TODO:
  *   - content/logs folder is required right now, otherwise Ghost want start
  */
-exports.doesContentPathExist = function doesContentPathExist() {
-    if (!fs.pathExistsSync(this.get('paths:contentPath'))) {
+const doesContentPathExist = function doesContentPathExist(contentPath) {
+    if (!fs.pathExistsSync(contentPath)) {
         throw new Error('Your content path does not exist! Please double check `paths.contentPath` in your custom config file e.g. config.production.json.');
     }
 };

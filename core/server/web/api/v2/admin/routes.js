@@ -273,7 +273,7 @@ module.exports = function apiRoutes() {
     router.post('/files/upload',
         mw.authAdminApi,
         apiMw.upload.single('file'),
-        http(apiv2.images.upload)
+        http(api.images.upload)
     );
     
 
@@ -281,7 +281,7 @@ module.exports = function apiRoutes() {
     router.post('/timetable/upload',
         mw.authAdminApi,
         apiMw.upload.single('file'),
-        http(apiv2.timetables.upload)
+        http(api.timetables.upload)
     );
 
     // ## Invites

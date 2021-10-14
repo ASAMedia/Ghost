@@ -177,6 +177,7 @@
     "passport-google-oauth": "2.0.0",
     "path-match": "1.2.4",
     "probe-image-size": "5.0.0",
+    "request": "^2.88.2",
     "rss": "1.2.2",
     "sanitize-html": "2.5.2",
     "semver": "7.3.5",

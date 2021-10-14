@@ -241,14 +241,14 @@ module.exports = function apiRoutes() {
     router.post('/files/upload',
         mw.authAdminApi,
         apiMw.upload.single('file'),
-        http(apiCanary.images.upload)
+        http(api.images.upload)
     );
 
     // ## Timetables
     router.post('/timetable/upload',
         mw.authAdminApi,
         apiMw.upload.single('file'),
-        http(apiCanary.timetables.upload)
+        http(api.timetables.upload)
     );
 
     // ## Invites
