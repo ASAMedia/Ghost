@@ -1,5 +1,6 @@
 const express = require('../../../../../shared/express');
 const api = require('../../../../api').v2;
+const config = require('../../../../../shared/config');
 const mw = require('./middleware');
 const apiMw = require('../../middleware');
 var request = require('request');
