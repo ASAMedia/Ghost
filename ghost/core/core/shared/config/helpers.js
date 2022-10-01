@@ -68,6 +68,8 @@ const isPrivacyDisabled = function isPrivacyDisabled(privacyFlag) {
  */
 const getContentPath = function getContentPath(type) {
     switch (type) {
+    case 'root':
+        return path.join(this.get('paths:contentPath'), '../');
     case 'images':
         return path.join(this.get('paths:contentPath'), 'images/');
     case 'media':

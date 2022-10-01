@@ -13,7 +13,7 @@ const validatePassword = require('../lib/validate-password');
 const permissions = require('../services/permissions');
 const urlUtils = require('../../shared/url-utils');
 const activeStates = ['active', 'warn-1', 'warn-2', 'warn-3', 'warn-4'];
-const ASSIGNABLE_ROLES = ['Administrator', 'Editor', 'Author', 'Contributor'];
+const ASSIGNABLE_ROLES = ['Administrator', 'Editor', 'Author', 'Contributor', 'Planseditor', 'Planseditor Contributor', 'Planseditor Author', 'Planseditor Editor'];
 
 const messages = {
     valueCannotBeBlank: 'Value in [{tableName}.{columnKey}] cannot be blank.',

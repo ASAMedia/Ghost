@@ -81,9 +81,9 @@ Role = ghostBookshelf.Model.extend({
         if (action === 'assign' && loadedPermissions.user) {
             let checkAgainst;
             if (_.some(loadedPermissions.user.roles, {name: 'Owner'})) {
-                checkAgainst = ['Owner', 'Administrator', 'Editor', 'Author', 'Contributor'];
+                checkAgainst = ['Owner', 'Administrator', 'Editor', 'Author', 'Contributor', 'Planseditor', 'Planseditor Contributor', 'Planseditor Author', 'Planseditor Editor'];
             } else if (_.some(loadedPermissions.user.roles, {name: 'Administrator'})) {
-                checkAgainst = ['Administrator', 'Editor', 'Author', 'Contributor'];
+                checkAgainst = ['Administrator', 'Editor', 'Author', 'Contributor', 'Planseditor', 'Planseditor Contributor', 'Planseditor Author', 'Planseditor Editor'];
             } else if (_.some(loadedPermissions.user.roles, {name: 'Editor'})) {
                 checkAgainst = ['Author', 'Contributor'];
             }
