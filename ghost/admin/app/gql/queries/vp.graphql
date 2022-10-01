@@ -1,0 +1,19 @@
+query vp($plan: ID!, $date: ISODate!, $key: String!) {
+    substitutions(where: { date: $date, plan: { id: $plan } }) {
+    id
+    date
+    class
+    teacher
+    replacement
+    note
+    room
+    period
+    subject
+    }
+    note(where: { key: $key }) {
+        id
+        key
+        value
+    }
+}
+

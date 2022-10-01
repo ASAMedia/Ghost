@@ -1,0 +1,14 @@
+mutation($id: ID!, $data: SubstitutionUpdateInput!) {
+                    updateSubstitution(where: { id: $id }, data: $data) {
+                    id
+                    date
+                    class
+                    teacher
+                    replacement
+                    note
+                    room
+                    period
+                    subject
+                    }
+                }
+                

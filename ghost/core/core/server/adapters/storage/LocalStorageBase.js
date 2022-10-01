@@ -155,6 +155,49 @@ class LocalStorageBase extends StorageBase {
         };
     }
 
+    serveFile(categorie) {
+        let {storagePath} = this;
+        let {filesStoragePath}=this;
+        return function serveStaticContent(req, res, next) {
+            if (categorie==='files') {
+                storagePath=filesStoragePath;
+            }
+            const startedAtMoment = moment();
+            return serveStatic(
+                storagePath,
+                {
+                    maxAge: constants.ONE_YEAR_MS,
+                    fallthrough: false,
+                    onEnd: () => {
+                        logging.info('LocalFileStorage.serve', req.path, moment().diff(startedAtMoment, 'ms') + 'ms');
+                    }
+                }
+            )(req, res, (err) => {
+                if (err) {
+                    if (err.statusCode === 404) {
+                        return next(new errors.NotFoundError({
+                            message: tpl(messages.imageNotFound),
+                            code: 'STATIC_FILE_NOT_FOUND',
+                            property: err.path
+                        }));
+                    }
+
+                    if (err.statusCode === 400) {
+                        return next(new errors.BadRequestError({err: err}));
+                    }
+
+                    if (err.statusCode === 403) {
+                        return next(new errors.NoPermissionError({err: err}));
+                    }
+
+                    return next(new errors.GhostError({err: err}));
+                }
+
+                next();
+            });
+        };
+    }
+
     /**
      * @param {String} filePath
      * @returns {Promise.<*>}

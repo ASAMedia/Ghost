@@ -12,7 +12,6 @@ Router.map(function () {
     this.route('home', {path: '/'});
 
     this.route('plans.vertretungsplan', {path: '/plans/vertretungsplan/:location/:date'});
-    this.route('plans.timetable', {path: '/plans/timetable'});
 
     this.route('files.documents', {path: '/files/documents'});
     

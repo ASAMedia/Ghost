@@ -53,6 +53,7 @@
     "@tryghost/nql-lang": "0.3.2",
     "@tryghost/string": "0.2.1",
     "@tryghost/timezone-data": "0.2.72",
+    "apollo-link-context": "^2.0.0-beta.0",
     "autoprefixer": "9.8.6",
     "babel-eslint": "10.1.0",
     "babel-plugin-transform-class-properties": "6.24.1",
@@ -68,6 +69,7 @@
     "cssnano": "4.1.10",
     "element-resize-detector": "1.2.4",
     "ember-ajax": "5.1.1",
+    "ember-apollo-client": "4.1.0",
     "ember-assign-helper": "0.4.0",
     "ember-auto-import": "2.4.2",
     "ember-classic-decorator": "3.0.0",
@@ -165,13 +167,22 @@
   },
   "resolutions": {
     "ember-basic-dropdown": "4.0.5",
-    "ember-in-viewport": "4.0.2"
+    "ember-in-viewport": "4.0.2",
+    "moment": "2.24.0",
+    "moment-timezone": "0.5.34"
   },
   "ember": {
     "edition": "octane"
   },
   "dependencies": {
+    "apollo-link": "1.2.14",
+    "ember-apollo-client": "4.1.0",
+    "ember-cli-clipboard": "0.9.0",
+    "graphql": "^16.6.0",
+    "graphql-tag": "2.12.6",
+    "lodash": "4.17.21",
     "path-browserify": "1.0.1",
+    "rsvp": "4.8.5",
     "webpack": "5.74.0"
   }
 }

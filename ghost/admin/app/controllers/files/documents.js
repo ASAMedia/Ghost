@@ -1,6 +1,6 @@
 import Controller from '@ember/controller';
-import { inject as service } from '@ember/service';
-import { run } from '@ember/runloop';
+import {inject as service} from '@ember/service';
+import {run} from '@ember/runloop';
 
 export default Controller.extend({
     ajax: service(),
@@ -13,8 +13,9 @@ export default Controller.extend({
         this.getFileList();
     },
     async getFileList(){
-      const response = await fetch(`${window.location.origin}/content/api/timetable/listall/`).then(response=>response.json());
+      const response = await fetch(`${window.location.origin}/content/api/files/listall/`).then(response=>response.json());
       this.set('fileList',response);
+      //console.log(this.fileList);
     },
     
     actions: {
@@ -32,7 +33,7 @@ export default Controller.extend({
                 formData.append(key, this.paramsHash[key]);
             });
 
-            let response = await ajax.post(`${window.location.origin}/ghost/api/v3/admin/timetable/upload/`, {
+            let response = await ajax.post(`${window.location.origin}/ghost/api/v3/admin/files/upload/`, {
                 data: formData,
                 processData: false,
                 contentType: false,
@@ -56,7 +57,7 @@ export default Controller.extend({
         },
         async deleteFile(file){
             let fileToDelete=file || this.fileToDelete;
-          const response = await fetch(`${window.location.origin}/ghost/api/v2/admin/timetables/delete`, {
+          const response = await fetch(`${window.location.origin}/ghost/api/v2/admin/documents/delete`, {
             method: 'post',
             headers: {
               file: fileToDelete.filePath

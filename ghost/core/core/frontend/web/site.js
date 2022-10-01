@@ -88,6 +88,12 @@ module.exports = function setupSiteApp(routerConfig) {
     // Serve site files using the storage adapter
     siteApp.use(STATIC_FILES_URL_PREFIX, storage.getStorage('files').serve());
 
+    // Serve document files using the storage adapter
+    siteApp.use('/content/files',storage.getStorage().serveFile('files'));
+
+    //Serve files uploaded by user
+    siteApp.get('/content/api/files/listall', mw.getAllFiles);
+    
     // Global handling for member session, ensures a member is logged in to the frontend
     siteApp.use(membersService.middleware.loadMemberSession);
 

@@ -2,7 +2,7 @@
     <div>
     <GhCanvasHeader class="gh-canvas-header">
         <h2 class="gh-canvas-title" data-test-screen-title>
-            Stundenpläne
+            Dokumente
         </h2>
     </GhCanvasHeader>
     <form id="settings-import" enctype="multipart/form-data">
@@ -17,10 +17,11 @@
     </form>
     <hr class="documents-hr">
     {{#each-in this.fileList as |date files|}}
-        <h4>{{moment-format (concat "" date) 'YYYY MMMM'}}</h4>  
+        <h4>{{moment-format (concat "" date) 'YYYY MMMM'}}</h4>
+       
     <div>
         <div class="documents-flex-container">
-         {{#each files as |file|}}
+        {{#each files as |file|}}
             <div>
                 <div class="delete">
                     <svg {{action "toggleDeleteFileModal" file}} title="Datei löschen" version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="30px" height="30px" viewBox="0 0 500 500" enable-background="new 0 0 30 38" xml:space="preserve">
@@ -46,7 +47,7 @@
                     </g>
                 <script xmlns="" type="text/javascript" id="useragent-switcher">navigator.__defineGetter__("userAgent", function() {return "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/604.3.5 (KHTML, like Gecko) Version/11.0.1 Safari/604.3.5"})</script></svg>
                 <br>
-                <a class="name" href="{{file.fullLink}}" target="_blank">{{file.name}}</a>
+                <a class="name"  href="{{file.fullLink}}" target="_blank">{{file.name}}</a>
                 <div class="clipboardDiv">
                 <input class="document-view-full-link" type="text" value={{file.fullLink}} readonly="readonly" >
                 <CopyButton
@@ -62,9 +63,9 @@
         {{/each}}
         </div>
     </div>
-   <br>
+    <br>
     {{/each-in}}
-
+   
     </div>
     {{#if isShowingDeleteFileModal}}
     {{#modal-dialog

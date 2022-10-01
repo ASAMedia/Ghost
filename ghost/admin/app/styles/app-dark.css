@@ -55,6 +55,8 @@
 @import "layouts/settings.css";
 @import "layouts/users.css";
 @import "layouts/user.css";
+@import "layouts/plans.css";
+@import "layouts/documents.css";
 @import "layouts/whatsnew.css";
 @import "layouts/tags.css";
 @import "layouts/members.css";
