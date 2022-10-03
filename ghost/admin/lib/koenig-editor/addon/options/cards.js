@@ -141,7 +141,7 @@ export const CARD_MENU = [
             replaceArg: 'bookmark',
             params: ['url']
         },
-        {
+        /*{
             label: 'Email content',
             icon: 'koenig/kg-card-type-email',
             desc: 'Only visible when delivered by email',
@@ -149,8 +149,8 @@ export const CARD_MENU = [
             type: 'card',
             replaceArg: 'email',
             postType: 'post'
-        },
-        {
+        },*/
+        /*{
             label: 'Email call to action',
             icon: 'koenig/kg-card-type-email-cta',
             desc: 'Target free or paid members with a CTA',
@@ -158,15 +158,15 @@ export const CARD_MENU = [
             type: 'card',
             replaceArg: 'email-cta',
             postType: 'post'
-        },
-        {
+        },*/
+        /*{
             label: 'Public preview',
             icon: 'koenig/kg-card-type-paywall',
             desc: 'Attract signups with a public intro',
             matches: ['public preview', 'preview', 'paywall'],
             type: 'card',
             replaceArg: 'paywall'
-        },
+        },*/
         {
             label: 'Button',
             icon: 'koenig/kg-card-type-button',
@@ -335,7 +335,7 @@ export const CARD_MENU = [
             replaceArg: 'embed',
             params: ['url']
         },
-        {
+        /*{
             label: 'NFT',
             icon: 'koenig/kg-card-type-nft',
             desc: '/nft [opensea url]',
@@ -344,7 +344,7 @@ export const CARD_MENU = [
             type: 'card',
             replaceArg: 'embed',
             params: ['url']
-        },
+        },*/
         {
             label: 'Other...',
             icon: 'koenig/kg-card-type-other',
