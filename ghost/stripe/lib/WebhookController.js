@@ -226,7 +226,10 @@ module.exports = class WebhookController {
                 const attribution = {
                     id: session.metadata.attribution_id ?? null,
                     url: session.metadata.attribution_url ?? null,
-                    type: session.metadata.attribution_type ?? null
+                    type: session.metadata.attribution_type ?? null,
+                    referrerSource: session.metadata.referrer_source ?? null,
+                    referrerMedium: session.metadata.referrer_medium ?? null,
+                    referrerUrl: session.metadata.referrer_url ?? null
                 };
 
                 const payerName = _.get(customer, 'subscriptions.data[0].default_payment_method.billing_details.name');
@@ -254,7 +257,10 @@ module.exports = class WebhookController {
                 const attribution = {
                     id: session.metadata?.attribution_id ?? null,
                     url: session.metadata?.attribution_url ?? null,
-                    type: session.metadata?.attribution_type ?? null
+                    type: session.metadata?.attribution_type ?? null,
+                    referrerSource: session.metadata.referrer_source ?? null,
+                    referrerMedium: session.metadata.referrer_medium ?? null,
+                    referrerUrl: session.metadata.referrer_url ?? null
                 };
 
                 if (payerName && !member.get('name')) {

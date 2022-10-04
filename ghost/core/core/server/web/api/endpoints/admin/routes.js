@@ -1,9 +1,9 @@
 const express = require('../../../../../shared/express');
 const api = require('../../../../api').endpoints;
-const config = require('../../../../../shared/config');
 const {http} = require('@tryghost/api-framework');
 const apiMw = require('../../middleware');
 const mw = require('./middleware');
+const labs = require('../../../../../shared/labs');
 
 const shared = require('../../../shared');
 
@@ -135,6 +135,8 @@ module.exports = function apiRoutes() {
     router.get('/stats/member_count', mw.authAdminApi, http(api.stats.memberCountHistory));
     router.get('/stats/mrr', mw.authAdminApi, http(api.stats.mrr));
     router.get('/stats/subscriptions', mw.authAdminApi, http(api.stats.subscriptions));
+    router.get('/stats/referrers/posts/:id', mw.authAdminApi, http(api.stats.postReferrers));
+    router.get('/stats/referrers', mw.authAdminApi, http(api.stats.referrersHistory));
 
     // ## Labels
     router.get('/labels', mw.authAdminApi, http(api.labels.browse));
@@ -307,6 +309,8 @@ module.exports = function apiRoutes() {
     router.post('/newsletters', mw.authAdminApi, http(api.newsletters.add));
     router.put('/newsletters/verifications/', mw.authAdminApi, http(api.newsletters.verifyPropertyUpdate));
     router.put('/newsletters/:id', mw.authAdminApi, http(api.newsletters.edit));
+
+    router.get('/links', labs.enabledMiddleware('emailClicks'), mw.authAdminApi, http(api.links.browse));
 
     return router;
 };

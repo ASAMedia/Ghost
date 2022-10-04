@@ -226,6 +226,18 @@ module.exports = class RouterController {
             if (attribution.type) {
                 metadata.attribution_type = attribution.type;
             }
+
+            if (attribution.referrerSource) {
+                metadata.referrer_source = attribution.referrerSource;
+            }
+
+            if (attribution.referrerMedium) {
+                metadata.referrer_medium = attribution.referrerMedium;
+            }
+
+            if (attribution.referrerUrl) {
+                metadata.referrer_url = attribution.referrerUrl;
+            }
         }
 
         if (!ghostPriceId) {

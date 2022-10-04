@@ -38,7 +38,9 @@ const BACKUP_TABLES = [
     'comments',
     'comment_likes',
     'comment_reports',
-    'jobs'
+    'jobs',
+    'redirects',
+    'members_click_events'
 ];
 
 // NOTE: exposing only tables which are going to be included in a "default" export file

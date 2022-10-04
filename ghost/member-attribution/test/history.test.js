@@ -77,6 +77,14 @@ describe('UrlHistory', function () {
                 time: Date.now(),
                 type: 'post',
                 id: '123'
+            }],
+            [{
+                time: Date.now(),
+                type: 'post',
+                id: '123',
+                referrerSource: 'ghost-explore',
+                referrerMedium: null,
+                referrerUrl: 'https://ghost.org'
             }]
         ];
         for (const input of inputs) {

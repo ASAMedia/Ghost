@@ -2,7 +2,6 @@ const _ = require('lodash');
 const template = require('./template');
 const settingsCache = require('../../../shared/settings-cache');
 const urlUtils = require('../../../shared/url-utils');
-const labs = require('../../../shared/labs');
 const moment = require('moment-timezone');
 const api = require('../../api').endpoints;
 const apiFramework = require('@tryghost/api-framework');
@@ -14,7 +13,9 @@ const {isUnsplashImage, isLocalContentImage} = require('@tryghost/kg-default-car
 const {textColorForBackgroundColor, darkenToContrastThreshold} = require('@tryghost/color-utils');
 const logging = require('@tryghost/logging');
 const urlService = require('../../services/url');
-const linkReplacement = require('../link-replacement');
+const linkReplacer = require('@tryghost/link-replacer');
+const linkTracking = require('../link-tracking');
+const memberAttribution = require('../member-attribution');
 
 const ALLOWED_REPLACEMENTS = ['first_name', 'uuid'];
 
@@ -355,10 +356,24 @@ const PostEmailSerializer = {
         }
 
         // Now replace the links in the HTML version
-        if (labs.isSet('emailClicks')) {
-            if ((!options.isBrowserPreview && !options.isTestEmail) || process.env.NODE_ENV === 'development') {
-                result.html = await linkReplacement.service.replaceLinks(result.html, newsletter, postModel);
-            }
+        if (!options.isBrowserPreview && !options.isTestEmail && settingsCache.get('email_track_clicks')) {
+            result.html = await linkReplacer.replace(result.html, async (url) => {
+                // Add newsletter source attribution
+                url = memberAttribution.service.addEmailSourceAttributionTracking(url, newsletter);
+                const isSite = urlUtils.isSiteUrl(url);
+
+                if (isSite) {
+                    // Only add post attribution to our own site (because external sites could/should not process this information)
+                    url = memberAttribution.service.addPostAttributionTracking(url, post);
+                }
+
+                // Add link click tracking
+                url = await linkTracking.service.addTrackingToUrl(url, post, '--uuid--');
+                
+                // We need to convert to a string at this point, because we need invalid string characters in the URL
+                const str = url.toString().replace(/--uuid--/g, '%%{uuid}%%');
+                return str;
+            });
         }
 
         // Clean up any unknown replacements strings to get our final content

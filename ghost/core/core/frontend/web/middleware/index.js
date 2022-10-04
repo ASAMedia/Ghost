@@ -5,6 +5,5 @@ module.exports = {
     redirectGhostToAdmin: require('./redirect-ghost-to-admin'),
     serveFavicon: require('./serve-favicon'),
     servePublicFile: require('./serve-public-file'),
-    staticTheme: require('./static-theme'),
-    getAllFiles: require('./get-all-files')
+    staticTheme: require('./static-theme')
 };

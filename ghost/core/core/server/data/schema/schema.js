@@ -497,6 +497,9 @@ module.exports = {
             }
         },
         attribution_url: {type: 'string', maxlength: 2000, nullable: true},
+        referrer_source: {type: 'string', maxlength: 191, nullable: true},
+        referrer_medium: {type: 'string', maxlength: 191, nullable: true},
+        referrer_url: {type: 'string', maxlength: 2000, nullable: true},
         source: {
             type: 'string', maxlength: 50, nullable: false, validations: {
                 isIn: [['member', 'import', 'system', 'api', 'admin']]
@@ -634,7 +637,10 @@ module.exports = {
                 isIn: [['url', 'post', 'page', 'author', 'tag']]
             }
         },
-        attribution_url: {type: 'string', maxlength: 2000, nullable: true}
+        attribution_url: {type: 'string', maxlength: 2000, nullable: true},
+        referrer_source: {type: 'string', maxlength: 191, nullable: true},
+        referrer_medium: {type: 'string', maxlength: 191, nullable: true},
+        referrer_url: {type: 'string', maxlength: 2000, nullable: true}
     },
     offer_redemptions: {
         id: {type: 'string', maxlength: 24, nullable: false, primary: true},
@@ -717,6 +723,7 @@ module.exports = {
         html: {type: 'text', maxlength: 1000000000, fieldtype: 'long', nullable: true},
         plaintext: {type: 'text', maxlength: 1000000000, fieldtype: 'long', nullable: true},
         track_opens: {type: 'bool', nullable: false, defaultTo: false},
+        track_clicks: {type: 'bool', nullable: false, defaultTo: false},
         submitted_at: {type: 'dateTime', nullable: false},
         newsletter_id: {type: 'string', maxlength: 24, nullable: true, references: 'newsletters.id'},
         created_at: {type: 'dateTime', nullable: false},
@@ -829,5 +836,19 @@ module.exports = {
         finished_at: {type: 'dateTime', nullable: true},
         created_at: {type: 'dateTime', nullable: false},
         updated_at: {type: 'dateTime', nullable: true}
+    },
+    redirects: {
+        id: {type: 'string', maxlength: 24, nullable: false, primary: true},
+        from: {type: 'string', maxlength: 2000, nullable: false},
+        to: {type: 'string', maxlength: 2000, nullable: false},
+        post_id: {type: 'string', maxlength: 24, nullable: true, unique: false, references: 'posts.id', setNullDelete: true},
+        created_at: {type: 'dateTime', nullable: false},
+        updated_at: {type: 'dateTime', nullable: true}
+    },
+    members_click_events: {
+        id: {type: 'string', maxlength: 24, nullable: false, primary: true},
+        member_id: {type: 'string', maxlength: 24, nullable: false, references: 'members.id', cascadeDelete: true},
+        redirect_id: {type: 'string', maxlength: 24, nullable: false, references: 'redirects.id', cascadeDelete: true},
+        created_at: {type: 'dateTime', nullable: false}
     }
 };

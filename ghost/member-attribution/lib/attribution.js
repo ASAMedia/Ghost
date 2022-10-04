@@ -4,6 +4,9 @@
  * @prop {string|null} url (absolute URL)
  * @prop {'page'|'post'|'author'|'tag'|'url'} type
  * @prop {string|null} title
+ * @prop {string|null} referrerSource
+ * @prop {string|null} referrerMedium
+ * @prop {string|null} referrerUrl
  */
 
 class Attribution {
@@ -15,11 +18,19 @@ class Attribution {
      * @param {string|null} [data.id]
      * @param {string|null} [data.url] Relative to subdirectory
      * @param {'page'|'post'|'author'|'tag'|'url'} [data.type]
+     * @param {string|null} [data.referrerSource]
+     * @param {string|null} [data.referrerMedium]
+     * @param {string|null} [data.referrerUrl]
      */
-    constructor({id, url, type}, {urlTranslator}) {
+    constructor({
+        id, url, type, referrerSource, referrerMedium, referrerUrl
+    }, {urlTranslator}) {
         this.id = id;
         this.url = url;
         this.type = type;
+        this.referrerSource = referrerSource;
+        this.referrerMedium = referrerMedium;
+        this.referrerUrl = referrerUrl;
 
         /**
          * @private
@@ -42,7 +53,10 @@ class Attribution {
                 id: null,
                 type: 'url',
                 url: this.#urlTranslator.relativeToAbsolute(this.url),
-                title: this.#urlTranslator.getUrlTitle(this.url)
+                title: this.#urlTranslator.getUrlTitle(this.url),
+                referrerSource: this.referrerSource,
+                referrerMedium: this.referrerMedium,
+                referrerUrl: this.referrerUrl
             };
         }
 
@@ -52,7 +66,10 @@ class Attribution {
             id: model.id,
             type: this.type,
             url: updatedUrl,
-            title: model.get('title') ?? model.get('name') ?? this.#urlTranslator.getUrlTitle(this.url)
+            title: model.get('title') ?? model.get('name') ?? this.#urlTranslator.getUrlTitle(this.url),
+            referrerSource: this.referrerSource,
+            referrerMedium: this.referrerMedium,
+            referrerUrl: this.referrerUrl
         };
     }
 
@@ -77,21 +94,27 @@ class Attribution {
 class AttributionBuilder {
     /** @type {import('./url-translator')} */
     urlTranslator;
+    /** @type {import('./referrer-translator')} */
+    referrerTranslator;
 
     /**
      */
-    constructor({urlTranslator}) {
+    constructor({urlTranslator, referrerTranslator}) {
         this.urlTranslator = urlTranslator;
+        this.referrerTranslator = referrerTranslator;
     }
 
     /**
      * Creates an Attribution object with the dependencies injected
      */
-    build({id, url, type}) {
+    build({id, url, type, referrerSource, referrerMedium, referrerUrl}) {
         return new Attribution({
             id,
             url,
-            type
+            type,
+            referrerSource,
+            referrerMedium,
+            referrerUrl
         }, {urlTranslator: this.urlTranslator});
     }
 
@@ -105,19 +128,31 @@ class AttributionBuilder {
             return this.build({
                 id: null,
                 url: null,
-                type: null
+                type: null,
+                referrerSource: null,
+                referrerMedium: null,
+                referrerUrl: null
             });
         }
 
-        // Note: history iterator is ordered from recent to oldest!
+        const referrerData = this.referrerTranslator.getReferrerDetails(history) || {
+            referrerSource: null,
+            referrerMedium: null,
+            referrerUrl: null
+        };
 
         // Start at the end. Return the first post we find
         const resources = [];
+
+        // Note: history iterator is ordered from recent to oldest!
         for (const item of history) {
             const resource = await this.urlTranslator.getResourceDetails(item);
 
             if (resource && resource.type === 'post') {
-                return this.build(resource);
+                return this.build({
+                    ...resource,
+                    ...referrerData
+                });
             }
 
             // Store to avoid that we need to look it up again
@@ -130,18 +165,25 @@ class AttributionBuilder {
         // Return first with an id (page, tag, author)
         for (const resource of resources) {
             if (resource.id) {
-                return this.build(resource);
+                return this.build({
+                    ...resource,
+                    ...referrerData
+                });
             }
         }
 
         // No post/page/tag/author found?
         // Return the last path that was visited
         if (resources.length > 0) {
-            return this.build(resources[0]);
+            return this.build({
+                ...referrerData,
+                ...resources[0]
+            });
         }
 
         // We only have history items without a path that have invalid ids
         return this.build({
+            ...referrerData,
             id: null,
             url: null,
             type: null
