@@ -208,7 +208,7 @@ module.exports = {
 
     /**
      * @param {Email-like} emailData - The email to send, must be a POJO so emailModel.toJSON() before calling if needed
-     * @param {[EmailRecipient]} recipients - The recipients to send the email to with their associated data
+     * @param {EmailRecipient[]} recipients - The recipients to send the email to with their associated data
      * @param {string?} memberSegment - The member segment of the recipients
      * @returns {Promise<Object>} - {providerId: 'xxx'}
      */
@@ -222,6 +222,10 @@ module.exports = {
         const startTime = Date.now();
         debug(`sending message to ${recipients.length} recipients`);
 
+        // Update email content for this segment before searching replacements
+        emailData = postEmailSerializer.renderEmailForSegment(emailData, memberSegment);
+
+        // Check all the used replacements in this email
         const replacements = postEmailSerializer.parseReplacements(emailData);
 
         // collate static and dynamic data for each recipient ready for provider
@@ -244,8 +248,6 @@ module.exports = {
 
             recipientData[recipient.member_email] = data;
         });
-
-        emailData = postEmailSerializer.renderEmailForSegment(emailData, memberSegment);
 
         try {
             const response = await mailgunClient.send(emailData, recipientData, replacements);
