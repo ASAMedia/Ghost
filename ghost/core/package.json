@@ -154,6 +154,8 @@
     "ghost-storage-base": "1.0.0",
     "glob": "8.0.3",
     "got": "9.6.0",
+    "grunt": "^1.5.3",
+    "grunt-contrib-symlink": "^1.0.0",
     "gscan": "4.34.0",
     "human-number": "2.0.1",
     "image-size": "1.0.2",
