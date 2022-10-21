@@ -1,9 +1,9 @@
 {
-  "name": "ghost-monorepo",
-  "version": "0.0.0-private",
+  "name": "ghost",
+  "version": "5.19.3",
   "description": "The professional publishing platform",
   "private": true,
-  "repository": "https://github.com/TryGhost/Ghost",
+  "repository": "https://github.com/ASAMedia/Ghost-LFG",
   "author": "Ghost Foundation",
   "license": "MIT",
   "workspaces": [
