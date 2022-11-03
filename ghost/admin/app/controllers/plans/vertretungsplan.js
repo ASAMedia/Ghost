@@ -1,5 +1,6 @@
 import Controller from '@ember/controller';
 import gql from 'graphql-tag';
+import moment from 'moment-timezone';
 import mutation from 'ghost-admin/gql/queries/vpEdit.graphql';
 import {alias} from '@ember/object/computed';
 import {get} from '@ember/object';
