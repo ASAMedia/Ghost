@@ -73,6 +73,8 @@
 @import "layouts/tiers.css";
 @import "layouts/offers.css";
 @import "layouts/explore.css";
+@import "ember-modal-dialog/ember-modal-structure.css";
+@import "ember-modal-dialog/ember-modal-appearance.css";
 
 :root {
     /* Primary colours */

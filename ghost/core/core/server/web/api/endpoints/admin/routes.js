@@ -6,6 +6,13 @@ const mw = require('./middleware');
 
 const shared = require('../../../shared');
 
+const sessionMw= require('../../../../services/auth/session');
+const expressSessionMw= require('../../../../services/auth/session/express-session');
+const fetch=require('node-fetch');
+require("dotenv").config();
+const fs = require('fs');
+const config = require('../../../../../shared/config');
+
 module.exports = function apiRoutes() {
     const router = express.Router('admin api');
 
@@ -13,6 +20,76 @@ module.exports = function apiRoutes() {
     router.del = router.delete;
 
     router.use(apiMw.cors);
+
+    // ## GraphQl Auth
+    router.post('/vertretungsplan/graphql', async (req, res, next)=>{
+        req.session= await expressSessionMw.getSession(req, res);
+        next();
+    }, sessionMw.authenticate, async (req, res)=>{
+        if (!req.headers.isplanseditor) {
+            return res.sendStatus(401);
+        }
+        if (req.headers.isplanseditor!=='true') {
+            return res.sendStatus(401);
+        }
+        const data = await fetch(process.env.VP_API_ENDPOINT,{
+            method: 'post',
+            body: JSON.stringify(req.body),
+            headers: {
+                'Content-Type': req.headers['content-type'],
+                authorization: `Bearer ${process.env.AUTH_EDIT_TOKEN}`
+            }
+        }).then(res=>res.text());
+        res.contentType('application/json');
+        res.send(data);
+    });
+    // ## Exporter Auth
+    router.get('/vertretungsplan/export', async (req, res, next)=>{
+        req.session= await expressSessionMw.getSession(req, res);
+        next();
+    }, sessionMw.authenticate, async (req, res)=>{
+        if (!req.headers.isplanseditor) {
+            return res.sendStatus(401);
+        }
+        if (req.headers.isplanseditor!=='true') {
+            return res.sendStatus(401);
+        }
+        const url=`${process.env.VP_EXPORT_ENDPOINT}?plan=${req.query.plan}&date=${req.query.date}&type=${req.query.type}`;
+        const data = await fetch(url,{
+            method: 'post',
+            headers: {
+                authorization: `Bearer ${process.env.WEB_ACCESS_TOKEN}`
+            }
+        });
+        const array=await data.arrayBuffer();
+        res.writeHead(200, {
+            'Content-Type': 'application/json',
+        });
+        const download = Buffer.from(array, 'base64');
+        res.end(download);
+    });
+
+    // ## Delete documents File
+    router.post('/documents/delete', async (req, res, next)=>{
+        req.session= await expressSessionMw.getSession(req, res);
+        next();
+    }, sessionMw.authenticate, async (req, res)=>{
+        if (!req.headers.file) {
+            return res.sendStatus(400);
+        }
+        let appDir = config.getContentPath('root');
+        let fullFilePath=`${appDir}${req.headers.file}`;
+        try {
+            fs.unlinkSync(fullFilePath)
+            console.log(`userID:${req.user.id}, deleted file: ${fullFilePath}`);
+            return res.sendStatus(200);
+            //file removed
+        } catch(err) {
+            console.error(err)
+            return res.sendStatus(400);
+        }
+        
+    });
 
     // ## Public
     router.get('/site', mw.publicAdminApi, http(api.site.read));
