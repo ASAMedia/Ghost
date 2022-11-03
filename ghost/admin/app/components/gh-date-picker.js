@@ -23,7 +23,7 @@ export default class GhDatePicker extends Component {
     @tracked error = null;
 
     get dateFormat() {
-        return 'YYYY-MM-DD';
+        return 'DD.MM.YYYY';
     }
 
     get minDate() {
@@ -32,6 +32,10 @@ export default class GhDatePicker extends Component {
 
     get maxDate() {
         return this._minMaxMoment(this.args.maxDate);
+    }
+
+    get dateValue(){
+        return moment(this.args.value).format(this.dateFormat);
     }
 
     get nameOfDay(){
