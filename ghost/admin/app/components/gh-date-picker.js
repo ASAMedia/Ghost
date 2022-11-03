@@ -34,6 +34,10 @@ export default class GhDatePicker extends Component {
         return this._minMaxMoment(this.args.maxDate);
     }
 
+    get nameOfDay(){
+        return moment(this.args.value).format('dd');
+    }
+
     @action
     setDate(dateStr) {
         this.error = null;
