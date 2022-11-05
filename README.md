@@ -29,7 +29,8 @@ Run in Dev mode with autoupdate if something changes
 yarn dev
 ``` 
 
-Build the release zip file (./.dist/release/Ghost-x.xx.x.zip)
+Build the release tgz file (./.dist/release/Ghost-x.xx.x.tgz)
+Newest npm version required!!
 ```
 yarn build
 ```
