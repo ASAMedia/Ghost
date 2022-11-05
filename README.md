@@ -7,6 +7,16 @@
 </p>
 
 # Custom Setup Guide
+Before getting started, you’ll need these global packages to be installed:
+- A supported version of Node.js - Ideally installed via nvm
+- Yarn - to manage all the packages
+
+Then install these global packages
+
+```
+yarn global add knex-migrator ember-cli
+```
+
 Setup the environment and all modules 
 
 ```
