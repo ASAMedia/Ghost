@@ -29,10 +29,10 @@ Run in Dev mode with autoupdate if something changes
 yarn dev
 ``` 
 
-Build the release tgz file (./.dist/release/Ghost-x.xx.x.tgz)
+Build the release tgz file (./ghost/core/Ghost-x.xx.x.tgz)
 Newest npm version required!!
 ```
-yarn build
+yarn archive
 ```
 https://ghost.org/docs/ghost-cli/#ghost-install
 Build and run the Docker image with docker-compose
