@@ -6,7 +6,7 @@ const localUtils = require('../../index');
 const mobiledoc = require('../../../../../lib/mobiledoc');
 const postsMetaSchema = require('../../../../../data/schema').tables.posts_meta;
 const clean = require('./utils/clean');
-const labs = require('../../../../../../shared/labs');
+const lexical = require('../../../../../lib/lexical');
 
 function removeSourceFormats(frame) {
     if (frame.options.formats?.includes('mobiledoc') || frame.options.formats?.includes('lexical')) {
@@ -16,7 +16,24 @@ function removeSourceFormats(frame) {
     }
 }
 
+/**
+ * Map names of relations to the internal names
+ */
+function mapWithRelated(frame) {
+    if (frame.options.withRelated) {
+        // Map sentiment to count.sentiment
+        frame.options.withRelated = frame.options.withRelated.map((relation) => {
+            return relation === 'sentiment' ? 'count.sentiment' : relation;
+        });
+        return;
+    }
+}
+
 function defaultRelations(frame) {
+    // Apply same mapping as content API
+    mapWithRelated(frame);
+
+    // Additional defaults for admin API
     if (frame.options.withRelated) {
         return;
     }
@@ -25,11 +42,7 @@ function defaultRelations(frame) {
         return false;
     }
 
-    if (labs.isSet('audienceFeedback')) {
-        frame.options.withRelated = ['tags', 'authors', 'authors.roles', 'email', 'tiers', 'newsletter', 'count.signups', 'count.paid_conversions', 'count.clicks', 'count.sentiment', 'count.positive_feedback'];
-    } else {
-        frame.options.withRelated = ['tags', 'authors', 'authors.roles', 'email', 'tiers', 'newsletter', 'count.signups', 'count.paid_conversions', 'count.clicks'];
-    }
+    frame.options.withRelated = ['tags', 'authors', 'authors.roles', 'email', 'tiers', 'newsletter', 'count.clicks'];
 }
 
 function setDefaultOrder(frame) {
@@ -60,7 +73,7 @@ function defaultFormat(frame) {
         return;
     }
 
-    frame.options.formats = 'mobiledoc';
+    frame.options.formats = 'mobiledoc,lexical';
 }
 
 function handlePostsMeta(frame) {
@@ -111,6 +124,7 @@ module.exports = {
 
             setDefaultOrder(frame);
             forceVisibilityColumn(frame);
+            mapWithRelated(frame);
         }
 
         if (!localUtils.isContentAPI(frame)) {
@@ -154,6 +168,10 @@ module.exports = {
 
             if (frame.options.source === 'html' && !_.isEmpty(html)) {
                 frame.data.posts[0].mobiledoc = JSON.stringify(mobiledoc.htmlToMobiledocConverter(html));
+
+                // normally we don't allow both mobiledoc+lexical but the model layer will remove lexical
+                // if mobiledoc is already present to avoid migrating formats outside of an explicit conversion
+                frame.data.posts[0].lexical = JSON.stringify(lexical.htmlToLexicalConverter(html));
             }
         }
 
@@ -206,6 +224,13 @@ module.exports = {
             id: frame.options.id,
             type: 'post'
         };
+
+        defaultFormat(frame);
+        defaultRelations(frame);
+    },
+
+    copy(apiConfig, frame) {
+        debug('copy');
 
         defaultFormat(frame);
         defaultRelations(frame);

@@ -31,8 +31,8 @@ export default class InstallThemeModal extends Component {
         return this.args.data.theme?.ref || this.args.data.ref;
     }
 
-    get isDefaultTheme() {
-        return this.themeName.toLowerCase() === 'casper';
+    get isDefaultOrLegacyTheme() {
+        return this.themeName.toLowerCase() === 'casper' || this.themeName.toLowerCase() === 'source';
     }
 
     get isConfirming() {
@@ -48,7 +48,7 @@ export default class InstallThemeModal extends Component {
     }
 
     get willOverwriteExisting() {
-        return !this.isDefaultTheme && this.themes.findBy('name', this.themeName.toLowerCase());
+        return !this.isDefaultOrLegacyTheme && this.themes.findBy('name', this.themeName.toLowerCase());
     }
 
     get hasWarningsOrErrors() {
@@ -67,9 +67,10 @@ export default class InstallThemeModal extends Component {
     @task
     *installThemeTask() {
         try {
-            if (this.isDefaultTheme) {
+            if (this.isDefaultOrLegacyTheme) {
                 // default theme can't be installed, only activated
-                const defaultTheme = this.store.peekRecord('theme', 'casper');
+                const themeName = this.themeName.toLowerCase();
+                const defaultTheme = this.store.peekRecord('theme', themeName);
                 yield this.themeManagement.activateTask.perform(defaultTheme, {skipErrors: true});
                 this.installedTheme = defaultTheme;
 
@@ -91,7 +92,7 @@ export default class InstallThemeModal extends Component {
                 this.installedTheme = this.store.peekRecord('theme', result.themes[0].name);
 
                 this.validationWarnings = this.installedTheme.warnings || [];
-                this.validationErrors = this.installedTheme.errors || [];
+                this.validationErrors = this.installedTheme.gscanErrors || [];
                 this.fatalValidationErrors = [];
 
                 // activate but prevent additional error modal from showing
@@ -124,7 +125,7 @@ export default class InstallThemeModal extends Component {
 
                 this.fatalValidationErrors = fatalErrors;
                 this.validationErrors = normalErrors;
-
+                this.validationWarnings = error.payload.errors[0].details.warnings || [];
                 return false;
             }
 

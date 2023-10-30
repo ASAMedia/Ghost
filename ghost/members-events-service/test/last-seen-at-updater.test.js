@@ -2,12 +2,13 @@
 // const testUtils = require('./utils');
 require('./utils');
 
-const assert = require('assert');
+const assert = require('assert/strict');
 const sinon = require('sinon');
 const {LastSeenAtUpdater} = require('../');
 const DomainEvents = require('@tryghost/domain-events');
 const {MemberPageViewEvent, MemberCommentEvent} = require('@tryghost/member-events');
 const moment = require('moment');
+const {EmailOpenedEvent} = require('@tryghost/email-events');
 
 describe('LastSeenAtUpdater', function () {
     it('Calls updateLastSeenAt on MemberPageViewEvents', async function () {
@@ -21,7 +22,7 @@ describe('LastSeenAtUpdater', function () {
                     get: settingsCache
                 }
             },
-            async getMembersApi() {
+            getMembersApi() {
                 return {
                     members: {
                         update: stub
@@ -35,6 +36,41 @@ describe('LastSeenAtUpdater', function () {
         assert(updater.updateLastSeenAt.calledOnceWithExactly('1', previousLastSeen, now.toDate()));
     });
 
+    it('Calls updateLastSeenAt on email opened events', async function () {
+        const now = moment('2022-02-28T18:00:00Z').utc();
+        const settingsCache = sinon.stub().returns('Etc/UTC');
+        const db = {
+            knex() {
+                return this;
+            },
+            where() {
+                return this;
+            },
+            andWhere() {
+                return this;
+            },
+            update: sinon.stub()
+        };
+        const updater = new LastSeenAtUpdater({
+            services: {
+                settingsCache: {
+                    get: settingsCache
+                }
+            },
+            getMembersApi() {
+                return {};
+            },
+            db
+        });
+        updater.subscribe(DomainEvents);
+        sinon.spy(updater, 'updateLastSeenAt');
+        sinon.spy(updater, 'updateLastSeenAtWithoutKnownLastSeen');
+        DomainEvents.dispatch(EmailOpenedEvent.create({memberId: '1', emailRecipientId: '1', emailId: '1', timestamp: now.toDate()}));
+        await DomainEvents.allSettled();
+        assert(updater.updateLastSeenAtWithoutKnownLastSeen.calledOnceWithExactly('1', now.toDate()));
+        assert(db.update.calledOnce);
+    });
+
     it('Calls updateLastCommentedAt on MemberCommentEvents', async function () {
         const now = moment('2022-02-28T18:00:00Z').utc();
         const stub = sinon.stub().resolves();
@@ -45,7 +81,7 @@ describe('LastSeenAtUpdater', function () {
                     get: settingsCache
                 }
             },
-            async getMembersApi() {
+            getMembersApi() {
                 return {
                     members: {
                         update: stub
@@ -70,7 +106,7 @@ describe('LastSeenAtUpdater', function () {
                     get: settingsCache
                 }
             },
-            async getMembersApi() {
+            getMembersApi() {
                 return {
                     members: {
                         update: stub
@@ -93,7 +129,7 @@ describe('LastSeenAtUpdater', function () {
                     get: settingsCache
                 }
             },
-            async getMembersApi() {
+            getMembersApi() {
                 return {
                     members: {
                         update: stub,
@@ -124,7 +160,7 @@ describe('LastSeenAtUpdater', function () {
                     get: settingsCache
                 }
             },
-            async getMembersApi() {
+            getMembersApi() {
                 return {
                     members: {
                         update: stub
@@ -151,7 +187,7 @@ describe('LastSeenAtUpdater', function () {
                     get: settingsCache
                 }
             },
-            async getMembersApi() {
+            getMembersApi() {
                 return {
                     members: {
                         update: stub
@@ -174,7 +210,7 @@ describe('LastSeenAtUpdater', function () {
                     get: settingsCache
                 }
             },
-            async getMembersApi() {
+            getMembersApi() {
                 return {
                     members: {
                         update: stub,
@@ -205,7 +241,7 @@ describe('LastSeenAtUpdater', function () {
                     get: settingsCache
                 }
             },
-            async getMembersApi() {
+            getMembersApi() {
                 return {
                     members: {
                         update: stub,
@@ -236,7 +272,7 @@ describe('LastSeenAtUpdater', function () {
                     get: settingsCache
                 }
             },
-            async getMembersApi() {
+            getMembersApi() {
                 return {
                     members: {
                         update: stub,
@@ -274,7 +310,7 @@ describe('LastSeenAtUpdater', function () {
                     get: settingsCache
                 }
             },
-            async getMembersApi() {
+            getMembersApi() {
                 return {
                     members: {
                         update: stub,
@@ -311,7 +347,7 @@ describe('LastSeenAtUpdater', function () {
                     get: settingsCache
                 }
             },
-            async getMembersApi() {
+            getMembersApi() {
                 return {
                     members: {
                         update: stub
@@ -325,7 +361,7 @@ describe('LastSeenAtUpdater', function () {
 
     it('throws if getMembersApi is not passed to LastSeenAtUpdater', async function () {
         const settingsCache = sinon.stub().returns('Asia/Bangkok');
-        
+
         should.throws(() => {
             new LastSeenAtUpdater({
                 services: {

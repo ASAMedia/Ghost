@@ -1,8 +1,12 @@
 import Component from '@glimmer/component';
 import {action} from '@ember/object';
+import {inject as service} from '@ember/service';
 
 export default class ActivityFeed extends Component {
+    @service feature;
+
     linkScrollerTimeout = null; // needs to be global so can be cleared when needed across functions
+    excludedEventTypes = ['aggregated_click_event'];
 
     @action
     enterLinkURL(event) {

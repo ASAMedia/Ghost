@@ -7,25 +7,52 @@ export default class GhExploreIframe extends Component {
     @service router;
     @service feature;
 
+    constructor() {
+        super(...arguments);
+        window.addEventListener('message', this.handleIframeMessage);
+    }
+
+    willDestroy() {
+        super.willDestroy(...arguments);
+        window.removeEventListener('message', this.handleIframeMessage);
+    }
+
     @action
     setup() {
-        this.explore.getExploreIframe().src = this.explore.getIframeURL();
+        // Only begin setup when Explore window is toggled open
+        // to avoid unnecessary loading of assets
+        if (this.explore.exploreWindowOpen) {
+            this.explore.getExploreIframe().src = this.explore.iframeURL;
+        }
+    }
 
-        window.addEventListener('message', async (event) => {
-            if (event?.data) {
-                if (event.data?.request === 'apiUrl') {
-                    this._handleUrlRequest();
-                }
+    @action
+    async handleIframeMessage(event) {
+        if (this.isDestroyed || this.isDestroying) {
+            return;
+        }
 
-                if (event.data?.route) {
-                    this._handleRouteUpdate(event.data);
-                }
-
-                if (event.data?.siteData) {
-                    this._handleSiteDataUpdate(event.data);
-                }
+        // only process messages coming from the explore iframe
+        if (event?.data && this.explore.iframeURL.includes(event?.origin)) {
+            if (event.data?.request === 'apiUrl') {
+                this._handleUrlRequest();
             }
-        });
+
+            if (event.data?.route) {
+                this._handleRouteUpdate(event.data);
+            }
+
+            if (event.data?.siteData) {
+                this._handleSiteDataUpdate(event.data);
+            }
+        }
+    }
+
+    @action
+    async handleDarkModeChange() {
+        if (this.explore.exploreWindowOpen) {
+            this.explore.sendUIUpdate({darkMode: this.feature.nightShift});
+        }
     }
 
     // The iframe can send route updates to navigate to within Admin, as some routes
@@ -45,6 +72,6 @@ export default class GhExploreIframe extends Component {
     }
 
     _handleSiteDataUpdate(data) {
-        this.explore.siteData = data.siteData;
+        this.explore.siteData = data?.siteData ?? {};
     }
 }

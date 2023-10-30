@@ -1,17 +1,30 @@
 import Controller from '@ember/controller';
+import {inject} from 'ghost-admin/decorators/inject';
 import {inject as service} from '@ember/service';
 
 export default class ApplicationController extends Controller {
     @service billing;
     @service explore;
-    @service config;
     @service router;
     @service session;
     @service settings;
     @service ui;
+    @service upgradeStatus;
+
+    @inject config;
 
     get showBilling() {
         return this.config.hostSettings?.billing?.enabled;
+    }
+
+    get showScriptExtension() {
+        const {session} = this;
+
+        if (!session.isAuthenticated || !session.user) {
+            return false;
+        }
+
+        return this.config.clientExtensions?.script;
     }
 
     get showNavMenu() {

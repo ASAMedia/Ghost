@@ -4,6 +4,7 @@ import {authenticateSession} from 'ember-simple-auth/test-support';
 import {blur, click, currentURL, fillIn, find, findAll, focus} from '@ember/test-helpers';
 import {datepickerSelect} from 'ember-power-datepicker/test-support';
 import {enableNewsletters} from '../../helpers/newsletters';
+import {enablePaidMembers} from '../../helpers/members';
 import {enableStripe} from '../../helpers/stripe';
 import {expect} from 'chai';
 import {selectChoose} from 'ember-power-select/test-support/helpers';
@@ -20,8 +21,10 @@ describe('Acceptance: Members filtering', function () {
     beforeEach(async function () {
         this.server.loadFixtures('configs');
         this.server.loadFixtures('settings');
+        this.server.loadFixtures('newsletters');
         enableStripe(this.server);
         enableNewsletters(this.server, true);
+        enablePaidMembers(this.server);
 
         let role = this.server.create('role', {name: 'Owner'});
         this.server.create('user', {roles: [role]});
@@ -117,7 +120,7 @@ describe('Acceptance: Members filtering', function () {
             this.server.createList('tier', 4);
 
             // add some members with tiers
-            const tier = this.server.create('tier');
+            const tier = this.server.create('tier', {id: 'qwerty123456789'});
             this.server.createList('member', 3, {tiers: [tier], newsletters: [newsletter]});
 
             // add some free members so we can see the filter excludes correctly
@@ -128,11 +131,9 @@ describe('Acceptance: Members filtering', function () {
             expect(findAll('[data-test-list="members-list-item"]').length, '# of initial member rows')
                 .to.equal(7);
             await click('[data-test-button="members-filter-actions"]');
-
             const filterSelector = `[data-test-members-filter="0"]`;
 
-            await fillIn(`${filterSelector} [data-test-select="members-filter"]`, 'tier');
-
+            await fillIn(`${filterSelector} [data-test-select="members-filter"]`, 'tier_id');
             // has the right operators
             const operatorOptions = findAll(`${filterSelector} [data-test-select="members-filter-operator"] option`);
             expect(operatorOptions).to.have.length(2);
@@ -160,15 +161,85 @@ describe('Acceptance: Members filtering', function () {
                 .to.equal(7);
         });
 
-        it('can filter by newsletter subscription', async function () {
-            // add some members to filter
-            this.server.createList('member', 3, {subscribed: true});
+        it('can filter by offer redeemed', async function () {
+            // add some offers to test the selection dropdown
+            const tier = this.server.create('tier');
+
+            // create 3 offers
+            const offer = this.server.create('offer', {tier: {id: tier.id}, createdAt: moment.utc().subtract(1, 'day').valueOf()});
+            this.server.create('offer', {tier: {id: tier.id}, createdAt: moment.utc().subtract(2, 'day').valueOf()});
+            this.server.create('offer', {tier: {id: tier.id}, createdAt: moment.utc().subtract(3, 'day').valueOf()});
+            this.server.createList('member', 3, {status: 'paid', tiers: [tier]});
+            const sub = this.server.create('subscription', {member: this.server.schema.members.first(), tier: tier, offer: offer});
+            const member = this.server.schema.members.first();
+            member.update({subscriptions: [sub]});
+
+            await visit('/members');
+            await click('[data-test-button="members-filter-actions"]');
+            const filterSelector = `[data-test-members-filter="0"]`;
+            await fillIn(`${filterSelector} [data-test-select="members-filter"]`, 'offer_redemptions');
+
+            // has the right operators
+            const operatorOptions = findAll(`${filterSelector} [data-test-select="members-filter-operator"] option`);
+            expect(operatorOptions).to.have.length(2);
+            expect(operatorOptions[0]).to.have.value('is');
+            expect(operatorOptions[1]).to.have.value('is-not');
+
+            await click(`${filterSelector} [data-test-token-input]`);
+            // this ensures that the offers are loaded into the multi-select dropdown in the filter
+            expect(findAll(`${filterSelector} [data-test-offers-segment]`).length, '# of label options').to.equal(3);
+
+            // can set filter by path
+            await visit('/');
+            await visit('/members?filter=' + encodeURIComponent(`offer_redemptions:'${offer.id}'`)); // ensure that the id is parsed as a string and not an integer
+
+            // only one redeemed offer so only 1 member should be shown
+            expect(findAll('[data-test-list="members-list-item"]').length, '# of filtered member rows').to.equal(1);
+        });
+
+        it('can filter by specific newsletter subscription', async function () {
+            // add some members to filters
+            const newsletter = this.server.create('newsletter', {status: 'active', slug: 'test-newsletter'});
+            this.server.createList('newsletter', 4);
+            this.server.createList('tier', 4);
             this.server.createList('member', 4, {subscribed: false});
 
             await visit('/members');
 
             expect(findAll('[data-test-list="members-list-item"]').length, '# of initial member rows')
-                .to.equal(7);
+                .to.equal(4);
+
+            await click('[data-test-button="members-filter-actions"]');
+            // make sure newsletters are in the filter dropdown
+            const newslettersCount = this.server.schema.newsletters.all().models.length;
+            let options = this.element.querySelectorAll('option');
+            let matchingOptions = [...options].filter(option => option.value.includes('newsletters.slug'));
+            expect(matchingOptions).to.have.length(newslettersCount);
+
+            await visit('/');
+            await visit('/members');
+            // add some members with tiers
+            const tier = this.server.create('tier');
+            const member = this.server.create('member', {tiers: [tier], subscribed: true});
+            member.update({newsletters: [newsletter]});
+            this.server.createList('member', 4, {subscribed: false});
+
+            await visit('/members?filter=' + encodeURIComponent(`newsletters.slug:${newsletter.slug}`));
+            // only 1 member is subscribed so we should only see 1 row
+            expect(findAll('[data-test-list="members-list-item"]').length, '# of initial member rows')
+                .to.equal(1);
+        });
+
+        it('can filter by newsletter subscription', async function () {
+            // add some members to filter
+            this.server.createList('member', 3, {subscribed: true, email_disabled: 0});
+            this.server.createList('member', 4, {subscribed: false, email_disabled: 0});
+            this.server.createList('member', 1, {subscribed: true, email_disabled: 1});
+
+            await visit('/members');
+
+            expect(findAll('[data-test-list="members-list-item"]').length, '# of initial member rows')
+                .to.equal(8);
 
             await click('[data-test-button="members-filter-actions"]');
 
@@ -195,14 +266,30 @@ describe('Acceptance: Members filtering', function () {
             // can change filter
             await fillIn(`${filterSelector} [data-test-select="members-filter-value"]`, 'false');
             expect(findAll('[data-test-list="members-list-item"]').length, '# of filtered member rows - false')
-                .to.equal(4);
+                .to.equal(5);
             expect(find('[data-test-table-column="subscribed"]')).to.exist;
 
             // can delete filter
             await click('[data-test-delete-members-filter="0"]');
 
             expect(findAll('[data-test-list="members-list-item"]').length, '# of filtered member rows after delete')
-                .to.equal(7);
+                .to.equal(8);
+
+            // Can set filter by path
+            await visit('/');
+            await visit('/members?filter=' + encodeURIComponent('(subscribed:true+email_disabled:0)'));
+            expect(findAll('[data-test-list="members-list-item"]').length, '# of filtered member rows - true - from URL')
+                .to.equal(3);
+            await click('[data-test-button="members-filter-actions"]');
+            expect(find(`${filterSelector} [data-test-select="members-filter-value"]`)).to.have.value('true');
+
+            // Can set filter by path
+            await visit('/');
+            await visit('/members?filter=' + encodeURIComponent('(subscribed:false,email_disabled:1)'));
+            expect(findAll('[data-test-list="members-list-item"]').length, '# of filtered member rows - false - from URL')
+                .to.equal(5);
+            await click('[data-test-button="members-filter-actions"]');
+            expect(find(`${filterSelector} [data-test-select="members-filter-value"]`)).to.have.value('false');
         });
 
         it('can filter by member status', async function () {

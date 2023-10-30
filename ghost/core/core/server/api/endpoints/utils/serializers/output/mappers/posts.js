@@ -18,14 +18,25 @@ const getPostServiceInstance = require('../../../../../../services/posts/posts-s
 const postsService = getPostServiceInstance();
 
 const commentsService = require('../../../../../../services/comments');
+const memberAttribution = require('../../../../../../services/member-attribution');
+const labs = require('../../../../../../../shared/labs');
 
 module.exports = async (model, frame, options = {}) => {
     const {tiers: tiersData} = options || {};
-    const extendedOptions = Object.assign(_.cloneDeep(frame.options), {
-        extraProperties: ['canonical_url']
-    });
 
-    const jsonModel = model.toJSON(extendedOptions);
+    // NOTE: `model` is now overloaded and may be a bookshelf model or a POJO
+    let jsonModel = model;
+    if (typeof model.toJSON === 'function') {
+        jsonModel = model.toJSON(frame.options);
+    } else {
+        // This is to satisfy the interface which extraAttrs needs
+        model = {
+            id: jsonModel.id,
+            get(attr) {
+                return jsonModel[attr];
+            }
+        };
+    }
 
     // Map email_recipient_filter to email_segment
     jsonModel.email_segment = jsonModel.email_recipient_filter;
@@ -33,7 +44,17 @@ module.exports = async (model, frame, options = {}) => {
 
     url.forPost(model.id, jsonModel, frame);
 
-    extraAttrs.forPost(frame, model, jsonModel);
+    extraAttrs.forPost(frame.options, model, jsonModel);
+
+    const defaultFormats = ['html'];
+    const formatsToKeep = frame.options.formats || frame.options.columns || defaultFormats;
+
+    // Iterate over all known formats, and if they are not in the keep list, remove them
+    _.each(['mobiledoc', 'lexical', 'html', 'plaintext'], function (format) {
+        if (formatsToKeep.indexOf(format) === -1) {
+            delete jsonModel[format];
+        }
+    });
 
     // Attach tiers to custom nql visibility filter
     if (jsonModel.visibility) {
@@ -64,6 +85,15 @@ module.exports = async (model, frame, options = {}) => {
             }
         } else {
             jsonModel.comments = false;
+        }
+
+        // Add  outbound link tags
+        if (labs.isSet('outboundLinkTagging')) {
+            // Only add it in the flag! Without the flag we only add it to emails.
+            if (jsonModel.html) {
+                // Only set if HTML was requested
+                jsonModel.html = await memberAttribution.outboundLinkTagger.addToHtml(jsonModel.html);
+            }
         }
     }
 
@@ -111,20 +141,34 @@ module.exports = async (model, frame, options = {}) => {
 
     if (jsonModel.email && jsonModel.count) {
         jsonModel.email.opened_count = Math.min(
-            Math.max(
-                jsonModel.email.opened_count || 0,
-                jsonModel.count.clicks || 0
-            ),
+            jsonModel.email.opened_count || 0,
             jsonModel.email.email_count
         );
     }
 
-    if (jsonModel.count && !jsonModel.count.sentiment) {
-        jsonModel.count.sentiment = 0;
+    // The sentiment has been loaded as a count relation in count.sentiment. But externally in the API we use just 'sentiment' instead of count.sentiment
+    // This part moves count.sentiment to just 'sentiment' when it has been loaded
+    if (frame.options.withRelated && frame.options.withRelated.includes('count.sentiment')) {
+        if (!jsonModel.count) {
+            jsonModel.sentiment = 0;
+        } else {
+            jsonModel.sentiment = jsonModel.count.sentiment ?? 0;
+
+            // Delete it from the original location
+            delete jsonModel.count.sentiment;
+
+            if (Object.keys(jsonModel.count).length === 0) {
+                delete jsonModel.count;
+            }
+        }
     }
 
     if (jsonModel.count && !jsonModel.count.positive_feedback) {
         jsonModel.count.positive_feedback = 0;
+    }
+
+    if (jsonModel.count && !jsonModel.count.negative_feedback) {
+        jsonModel.count.negative_feedback = 0;
     }
 
     return jsonModel;

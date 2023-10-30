@@ -105,50 +105,6 @@
             </div>
         </div>
 
-        <div class="gh-radio {{if (eq @selected.name "Planseditor") "active"}}" {{on "click" (fn this.setRole "Planseditor")}} data-test-option="Planseditor">
-        <div class="gh-radio-button"></div>
-        <div class="gh-radio-content">
-            <div class="gh-radio-label">Planseditor</div>
-            <div class="gh-radio-desc">Planseditor</div>
-        </div>
-        <div>
-            {{!-- Inner container collapses height to the SVG so popover can align correctly --}}
-        </div>
-    </div>
-
-    <div class="gh-radio {{if (eq @selected.name "Planseditor Contributor") "active"}}" {{on "click" (fn this.setRole "Planseditor Contributor")}} data-test-option="Planseditor Contributor">
-        <div class="gh-radio-button"></div>
-        <div class="gh-radio-content">
-            <div class="gh-radio-label">Planseditor Contributor</div>
-            <div class="gh-radio-desc">Planseditor + Contributor</div>
-        </div>
-        <div>
-            {{!-- Inner container collapses height to the SVG so popover can align correctly --}}
-        </div>
-    </div>
-
-    <div class="gh-radio {{if (eq @selected.name "Planseditor Author") "active"}}" {{on "click" (fn this.setRole "Planseditor Author")}} data-test-option="Planseditor Author">
-        <div class="gh-radio-button"></div>
-        <div class="gh-radio-content">
-            <div class="gh-radio-label">Planseditor Author</div>
-            <div class="gh-radio-desc">Planseditor + Author</div>
-        </div>
-        <div>
-            {{!-- Inner container collapses height to the SVG so popover can align correctly --}}
-        </div>
-    </div>
-
-    <div class="gh-radio {{if (eq @selected.name "Planseditor Editor") "active"}}" {{on "click" (fn this.setRole "Planseditor Editor")}} data-test-option="Planseditor Editor">
-        <div class="gh-radio-button"></div>
-        <div class="gh-radio-content">
-            <div class="gh-radio-label">Planseditor Editor</div>
-            <div class="gh-radio-desc">Planseditor + Editor</div>
-        </div>
-        <div>
-            {{!-- Inner container collapses height to the SVG so popover can align correctly --}}
-        </div>
-    </div>
-
         <div class="gh-radio {{if (eq @selected.name "Administrator") "active"}}" {{on "click" (fn this.setRole "Administrator")}} data-test-option="Administrator">
             <div class="gh-radio-button"></div>
             <div class="gh-radio-content">
@@ -192,8 +148,6 @@
                 </div>
             </div>
         </div>
-
-        
 
 
         <div class="gh-content-box pa" hidden={{if this.limitErrorMessage false true}}>

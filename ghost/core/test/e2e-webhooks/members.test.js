@@ -1,29 +1,21 @@
 const {agentProvider, mockManager, fixtureManager, matchers} = require('../utils/e2e-framework');
 const {anyGhostAgent, anyObjectId, anyISODateTime, anyUuid, anyContentVersion, anyNumber} = matchers;
 
-const buildNewsletterSnapshot = (deleteMember = false) => {
+const buildNewsletterSnapshot = () => {
     const newsLetterSnapshot = {
-        id: anyObjectId,
-        uuid: anyUuid,
-        created_at: anyISODateTime,
-        updated_at: anyISODateTime
+        id: anyObjectId
     };
-
-    if (deleteMember) {
-        newsLetterSnapshot._pivot_member_id = anyObjectId;
-        newsLetterSnapshot._pivot_newsletter_id = anyObjectId;
-    }
 
     return newsLetterSnapshot;
 };
 
-const buildMemberSnapshot = (deleteMember = false) => {
+const buildMemberSnapshot = () => {
     const memberSnapshot = {
         id: anyObjectId,
         uuid: anyUuid,
         created_at: anyISODateTime,
         updated_at: anyISODateTime,
-        newsletters: new Array(1).fill(buildNewsletterSnapshot(deleteMember))
+        newsletters: new Array(1).fill(buildNewsletterSnapshot())
     };
 
     return memberSnapshot;
@@ -99,7 +91,7 @@ describe('member.* events', function () {
                 }]
             })
             .expectStatus(201);
-        
+
         const id = res.body.members[0].id;
 
         await adminAPIAgent
@@ -117,7 +109,53 @@ describe('member.* events', function () {
             .matchBodySnapshot({
                 member: {
                     current: {},
-                    previous: buildMemberSnapshot(true)
+                    previous: buildMemberSnapshot()
+                }
+            });
+    });
+
+    it('member.edited event is triggered', async function () {
+        const webhookURL = 'https://test-webhook-receiver.com/member-edited/';
+        await webhookMockReceiver.mock(webhookURL);
+        await fixtureManager.insertWebhook({
+            event: 'member.edited',
+            url: webhookURL
+        });
+
+        const res = await adminAPIAgent
+            .post('members/')
+            .body({
+                members: [{
+                    name: 'Test Member3',
+                    email: 'testemail3@example.com',
+                    note: 'test note3'
+                }]
+            })
+            .expectStatus(201);
+
+        const id = res.body.members[0].id;
+
+        await adminAPIAgent
+            .put('members/' + id)
+            .body({
+                members: [{name: 'Ghost'}]
+            })
+            .expectStatus(200);
+
+        await webhookMockReceiver.receivedRequest();
+
+        webhookMockReceiver
+            .matchHeaderSnapshot({
+                'content-version': anyContentVersion,
+                'content-length': anyNumber,
+                'user-agent': anyGhostAgent
+            })
+            .matchBodySnapshot({
+                member: {
+                    current: buildMemberSnapshot(),
+                    previous: {
+                        updated_at: anyISODateTime
+                    }
                 }
             });
     });

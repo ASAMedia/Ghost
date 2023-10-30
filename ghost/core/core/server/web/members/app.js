@@ -14,6 +14,7 @@ const {http} = require('@tryghost/api-framework');
 const api = require('../../api').endpoints;
 
 const commentRouter = require('../comments');
+const announcementRouter = require('../announcement');
 
 module.exports = function setupMembersApp() {
     debug('Members App setup start');
@@ -34,7 +35,7 @@ module.exports = function setupMembersApp() {
     membersApp.post('/webhooks/stripe', bodyParser.raw({type: 'application/json'}), stripeService.webhookController.handle.bind(stripeService.webhookController));
 
     // Initializes members specific routes as well as assigns members specific data to the req/res objects
-    // We don't want to add global bodyParser middleware as that interfers with stripe webhook requests on - `/webhooks`.
+    // We don't want to add global bodyParser middleware as that interferes with stripe webhook requests on - `/webhooks`.
 
     // Manage newsletter subscription via unsubscribe link
     membersApp.get('/api/member/newsletters', middleware.getMemberNewsletters);
@@ -45,37 +46,68 @@ module.exports = function setupMembersApp() {
     membersApp.put('/api/member', bodyParser.json({limit: '50mb'}), middleware.updateMemberData);
     membersApp.post('/api/member/email', bodyParser.json({limit: '50mb'}), (req, res) => membersService.api.middleware.updateEmailAddress(req, res));
 
+    // Remove email from suppression list
+    membersApp.delete('/api/member/suppression', middleware.deleteSuppression);
+
     // Manage session
     membersApp.get('/api/session', middleware.getIdentityToken);
     membersApp.delete('/api/session', middleware.deleteSession);
 
     // NOTE: this is wrapped in a function to ensure we always go via the getter
     membersApp.post(
-        '/api/send-magic-link', 
-        bodyParser.json(), 
+        '/api/send-magic-link',
+        bodyParser.json(),
         // Prevent brute forcing email addresses (user enumeration)
-        shared.middleware.brute.membersAuthEnumeration, 
+        shared.middleware.brute.membersAuthEnumeration,
         // Prevent brute forcing passwords for the same email address
-        shared.middleware.brute.membersAuth, 
+        shared.middleware.brute.membersAuth,
         (req, res, next) => membersService.api.middleware.sendMagicLink(req, res, next)
     );
     membersApp.post('/api/create-stripe-checkout-session', (req, res, next) => membersService.api.middleware.createCheckoutSession(req, res, next));
     membersApp.post('/api/create-stripe-update-session', (req, res, next) => membersService.api.middleware.createCheckoutSetupSession(req, res, next));
     membersApp.put('/api/subscriptions/:id', (req, res, next) => membersService.api.middleware.updateSubscription(req, res, next));
-    membersApp.post('/api/events', labs.enabledMiddleware('membersActivity'), middleware.loadMemberSession, (req, res, next) => membersService.api.middleware.createEvents(req, res, next));
 
     // Comments
     membersApp.use('/api/comments', commentRouter());
 
     // Feedback
     membersApp.post(
-        '/api/feedback', 
-        labs.enabledMiddleware('audienceFeedback'), 
-        bodyParser.json({limit: '50mb'}), 
-        middleware.loadMemberSession, 
-        middleware.authMemberByUuid, 
+        '/api/feedback',
+        labs.enabledMiddleware('audienceFeedback'),
+        bodyParser.json({limit: '50mb'}),
+        middleware.loadMemberSession,
+        middleware.authMemberByUuid,
         http(api.feedbackMembers.add)
     );
+
+    // Announcement
+    membersApp.use(
+        '/api/announcement',
+        labs.enabledMiddleware('announcementBar'),
+        middleware.loadMemberSession,
+        announcementRouter()
+    );
+
+    // Recommendations
+    membersApp.post(
+        '/api/recommendations/:id/clicked',
+        middleware.loadMemberSession,
+        http(api.recommendationsPublic.trackClicked)
+    );
+
+    // Recommendations
+    membersApp.post(
+        '/api/recommendations/:id/subscribed',
+        middleware.loadMemberSession,
+        http(api.recommendationsPublic.trackSubscribed)
+    );
+
+    // Allow external systems to read public settings via the members api
+    // Without CORS issues and without a required integration token
+    // 1. Detect if a site is Running Ghost
+    // 2. For recommendations to know when we can offer 'one-click-subscribe' to know if members are enabled
+    // Why not content API? Domain can be different from recommended domain + CORS issues
+    membersApp.get('/api/site', http(api.site.read));
 
     // API error handling
     membersApp.use('/api', errorHandler.resourceNotFound);

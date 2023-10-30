@@ -4,12 +4,15 @@ import {
     IMAGE_MIME_TYPES
 } from 'ghost-admin/components/gh-image-uploader';
 import {action} from '@ember/object';
+import {inject} from 'ghost-admin/decorators/inject';
 import {inject as service} from '@ember/service';
 import {tracked} from '@glimmer/tracking';
+
 export default class ModalPostPreviewSocialComponent extends Component {
-    @service config;
     @service settings;
     @service ghostPaths;
+
+    @inject config;
 
     @tracked editingFacebookTitle = false;
     @tracked editingFacebookDescription = false;
@@ -63,11 +66,11 @@ export default class ModalPostPreviewSocialComponent extends Component {
             urlParts.push(this.args.post.slug);
         }
 
-        return urlParts.join(' > ');
+        return urlParts.join(' › ');
     }
 
     get serpDescription() {
-        return this.args.post.metaDescription || this.args.post.excerpt;
+        return this.args.post.metaDescription;
     }
 
     @action

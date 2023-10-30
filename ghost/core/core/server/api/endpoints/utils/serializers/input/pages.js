@@ -6,6 +6,7 @@ const slugFilterOrder = require('./utils/slug-filter-order');
 const localUtils = require('../../index');
 const postsMetaSchema = require('../../../../../data/schema').tables.posts_meta;
 const clean = require('./utils/clean');
+const lexical = require('../../../../../lib/lexical');
 
 function removeSourceFormats(frame) {
     if (frame.options.formats?.includes('mobiledoc') || frame.options.formats?.includes('lexical')) {
@@ -55,7 +56,7 @@ function defaultFormat(frame) {
         return;
     }
 
-    frame.options.formats = 'mobiledoc';
+    frame.options.formats = 'mobiledoc,lexical';
 }
 
 function handlePostsMeta(frame) {
@@ -133,6 +134,10 @@ module.exports = {
 
             if (frame.options.source === 'html' && !_.isEmpty(html)) {
                 frame.data.pages[0].mobiledoc = JSON.stringify(mobiledoc.htmlToMobiledocConverter(html));
+
+                // normally we don't allow both mobiledoc+lexical but the model layer will remove lexical
+                // if mobiledoc is already present to avoid migrating formats outside of an explicit conversion
+                frame.data.pages[0].lexical = JSON.stringify(lexical.htmlToLexicalConverter(html));
             }
         }
 
@@ -186,6 +191,21 @@ module.exports = {
             id: frame.options.id,
             type: 'page'
         };
+
+        defaultFormat(frame);
+        defaultRelations(frame);
+    },
+
+    bulkEdit(apiConfig, frame) {
+        forcePageFilter(frame);
+    },
+
+    bulkDestroy(apiConfig, frame) {
+        forcePageFilter(frame);
+    },
+
+    copy(apiConfig, frame) {
+        debug('copy');
 
         defaultFormat(frame);
         defaultRelations(frame);

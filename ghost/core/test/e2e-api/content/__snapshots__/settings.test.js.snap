@@ -5,10 +5,11 @@ Object {
   "meta": Object {},
   "settings": Object {
     "accent_color": "#FF1A75",
+    "allow_self_signup": true,
     "codeinjection_foot": null,
     "codeinjection_head": null,
-    "comments_enabled": null,
-    "cover_image": "https://static.ghost.org/v4.0.0/images/publication-cover.jpg",
+    "comments_enabled": "off",
+    "cover_image": "https://static.ghost.org/v5.0.0/images/publication-cover.jpg",
     "description": "Thoughts, stories and ideas",
     "facebook": "ghost",
     "firstpromoter_account": null,
@@ -46,6 +47,7 @@ Object {
     "og_description": null,
     "og_image": null,
     "og_title": null,
+    "outbound_link_tagging": true,
     "paid_members_enabled": true,
     "portal_button": true,
     "portal_button_icon": null,
@@ -55,6 +57,9 @@ Object {
     "portal_plans": Array [
       "free",
     ],
+    "portal_signup_checkbox_required": false,
+    "portal_signup_terms_html": null,
+    "recommendations_enabled": false,
     "secondary_navigation": Array [
       Object {
         "label": "Data & privacy",
@@ -87,6 +92,7 @@ Object {
   "cache-control": "public, max-age=0",
   "content-length": StringMatching /\\\\d\\+/,
   "content-type": "application/json; charset=utf-8",
+  "content-version": StringMatching /v\\\\d\\+\\\\\\.\\\\d\\+/,
   "etag": StringMatching /\\(\\?:W\\\\/\\)\\?"\\(\\?:\\[ !#-\\\\x7E\\\\x80-\\\\xFF\\]\\*\\|\\\\r\\\\n\\[\\\\t \\]\\|\\\\\\\\\\.\\)\\*"/,
   "vary": "Accept-Version, Accept-Encoding",
   "x-powered-by": "Express",

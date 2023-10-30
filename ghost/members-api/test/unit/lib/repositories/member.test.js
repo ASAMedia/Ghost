@@ -1,20 +1,28 @@
-const assert = require('assert');
+const assert = require('assert/strict');
 const sinon = require('sinon');
 const DomainEvents = require('@tryghost/domain-events');
-const MemberRepository = require('../../../../lib/repositories/member');
+const MemberRepository = require('../../../../lib/repositories/MemberRepository');
 const {SubscriptionCreatedEvent} = require('@tryghost/member-events');
 
+const mockOfferRedemption = {
+    add: sinon.stub()
+};
+
 describe('MemberRepository', function () {
+    afterEach(function () {
+        sinon.restore();
+    });
+
     describe('#isComplimentarySubscription', function () {
         it('Does not error when subscription.plan is null', function () {
-            const repo = new MemberRepository({});
+            const repo = new MemberRepository({OfferRedemption: mockOfferRedemption});
             repo.isComplimentarySubscription({});
         });
     });
 
     describe('#resolveContextSource', function (){
         it('Maps context to source', function (){
-            const repo = new MemberRepository({});
+            const repo = new MemberRepository({OfferRedemption: mockOfferRedemption});
 
             let source = repo._resolveContextSource({
                 import: true
@@ -53,19 +61,107 @@ describe('MemberRepository', function () {
         });
     });
 
+    describe('setComplimentarySubscription', function () {
+        let Member;
+        let productRepository;
+
+        beforeEach(function () {
+            Member = {
+                findOne: sinon.stub().resolves({
+                    id: 'member_id_123',
+                    related: () => {
+                        return {
+                            fetch: () => {
+                                return {
+                                    models: []
+                                };
+                            }
+                        };
+                    }
+                })
+            };
+        });
+
+        it('throws an error when there is no default product', async function () {
+            productRepository = {
+                getDefaultProduct: sinon.stub().resolves(null)
+            };
+
+            const repo = new MemberRepository({
+                Member,
+                stripeAPIService: {
+                    configured: true
+                },
+                productRepository,
+                OfferRedemption: mockOfferRedemption
+            });
+
+            try {
+                await repo.setComplimentarySubscription({
+                    id: 'member_id_123'
+                }, {
+                    transacting: true
+                });
+
+                assert.fail('setComplimentarySubscription should have thrown');
+            } catch (err) {
+                assert.equal(err.message, 'Could not find Product "default"');
+            }
+        });
+
+        it('uses the right options for fetching default product', async function () {
+            productRepository = {
+                getDefaultProduct: sinon.stub().resolves({
+                    toJSON: () => {
+                        return null;
+                    }
+                })
+            };
+
+            const repo = new MemberRepository({
+                Member,
+                stripeAPIService: {
+                    configured: true
+                },
+                productRepository,
+                OfferRedemption: mockOfferRedemption
+            });
+
+            try {
+                await repo.setComplimentarySubscription({
+                    id: 'member_id_123'
+                }, {
+                    transacting: true,
+                    withRelated: ['labels']
+                });
+
+                assert.fail('setComplimentarySubscription should have thrown');
+            } catch (err) {
+                productRepository.getDefaultProduct.calledWith({withRelated: ['stripePrices'], transacting: true}).should.be.true();
+                assert.equal(err.message, 'Could not find Product "default"');
+            }
+        });
+    });
+
     describe('linkSubscription', function (){
         let Member;
-        let notifySpy;
         let MemberPaidSubscriptionEvent;
         let StripeCustomerSubscription;
         let MemberProductEvent;
         let stripeAPIService;
         let productRepository;
+        let offerRepository;
         let labsService;
         let subscriptionData;
+        let notifySpy;
+
+        afterEach(function () {
+            sinon.restore();
+        });
 
         beforeEach(async function () {
             notifySpy = sinon.spy();
+
             subscriptionData = {
                 id: 'sub_123',
                 customer: 'cus_123',
@@ -95,14 +191,14 @@ describe('MemberRepository', function () {
 
             Member = {
                 findOne: sinon.stub().resolves({
-                    related: () => {
+                    related: (relation) => {
                         return {
                             query: sinon.stub().returns({
                                 fetchOne: sinon.stub().resolves({})
                             }),
-                            toJSON: sinon.stub().returns([]),
+                            toJSON: sinon.stub().returns(relation === 'products' ? [] : {}),
                             fetch: sinon.stub().resolves({
-                                toJSON: sinon.stub().returns({})
+                                toJSON: sinon.stub().returns(relation === 'products' ? [] : {})
                             })
                         };
                     },
@@ -141,6 +237,12 @@ describe('MemberRepository', function () {
             labsService = {
                 isSet: sinon.stub().returns(true)
             };
+
+            offerRepository = {
+                getById: sinon.stub().resolves({
+                    id: 'offer_123'
+                })
+            };
         });
 
         it('dispatches paid subscription event', async function (){
@@ -151,7 +253,8 @@ describe('MemberRepository', function () {
                 MemberProductEvent,
                 productRepository,
                 labsService,
-                Member
+                Member,
+                OfferRedemption: mockOfferRedemption
             });
 
             sinon.stub(repo, 'getSubscriptionByStripeID').resolves(null);
@@ -170,8 +273,41 @@ describe('MemberRepository', function () {
             notifySpy.calledOnce.should.be.true();
         });
 
-        afterEach(function () {
-            sinon.restore();
+        it('attaches offer information to subscription event', async function (){
+            const repo = new MemberRepository({
+                stripeAPIService,
+                StripeCustomerSubscription,
+                MemberPaidSubscriptionEvent,
+                MemberProductEvent,
+                productRepository,
+                offerRepository,
+                labsService,
+                Member,
+                OfferRedemption: mockOfferRedemption
+            });
+
+            sinon.stub(repo, 'getSubscriptionByStripeID').resolves(null);
+
+            DomainEvents.subscribe(SubscriptionCreatedEvent, notifySpy);
+
+            await repo.linkSubscription({
+                id: 'member_id_123',
+                subscription: subscriptionData,
+                offerId: 'offer_123'
+            }, {
+                transacting: {
+                    executionPromise: Promise.resolve()
+                },
+                context: {}
+            });
+
+            notifySpy.calledOnce.should.be.true();
+            notifySpy.calledWith(sinon.match((event) => {
+                if (event.data.offerId === 'offer_123') {
+                    return true;
+                }
+                return false;
+            })).should.be.true();
         });
     });
 });

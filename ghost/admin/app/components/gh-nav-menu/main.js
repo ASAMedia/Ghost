@@ -7,6 +7,7 @@ import {action} from '@ember/object';
 import {and, equal, match, or, reads} from '@ember/object/computed';
 import {getOwner} from '@ember/application';
 import {htmlSafe} from '@ember/template';
+import {inject} from 'ghost-admin/decorators/inject';
 import {inject as service} from '@ember/service';
 import {tagName} from '@ember-decorators/component';
 import {task} from 'ember-concurrency';
@@ -15,7 +16,6 @@ import {task} from 'ember-concurrency';
 @tagName('')
 export default class Main extends Component.extend(ShortcutsMixin) {
     @service billing;
-    @service config;
     @service customViews;
     @service feature;
     @service ghostPaths;
@@ -27,6 +27,9 @@ export default class Main extends Component.extend(ShortcutsMixin) {
     @service whatsNew;
     @service membersStats;
     @service settings;
+    @service explore;
+
+    @inject config;
 
     iconStyle = '';
     iconClass = '';
@@ -47,9 +50,6 @@ export default class Main extends Component.extend(ShortcutsMixin) {
     @and('config.clientExtensions.menu', 'session.user.isOwnerOnly')
         showMenuExtension;
 
-    @and('config.clientExtensions.script', 'session.user.isOwnerOnly')
-        showScriptExtension;
-
     @reads('config.hostSettings.billing.enabled')
         showBilling;
 
@@ -69,7 +69,10 @@ export default class Main extends Component.extend(ShortcutsMixin) {
     didReceiveAttrs() {
         super.didReceiveAttrs(...arguments);
         this._setIconStyle();
-        this._loadMemberCountsTask.perform();
+
+        if (this.session.user && this.session.user.isAdmin) {
+            this._loadMemberCountsTask.perform();
+        }
     }
 
     didInsertElement() {
@@ -104,6 +107,11 @@ export default class Main extends Component.extend(ShortcutsMixin) {
     @action
     toggleBillingModal() {
         this.billing.openBillingWindow(this.router.currentURL);
+    }
+
+    @action
+    toggleExploreWindow() {
+        this.explore.openExploreWindow();
     }
 
     @task(function* () {

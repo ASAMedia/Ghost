@@ -1,17 +1,32 @@
 // Switch these lines once there are useful utils
 // const testUtils = require('./utils');
 const sinon = require('sinon');
+const assert = require('assert/strict');
 require('./utils');
 const VerificationTrigger = require('../index');
 const DomainEvents = require('@tryghost/domain-events');
 const {MemberCreatedEvent} = require('@tryghost/member-events');
 
 describe('Import threshold', function () {
+    beforeEach(function () {
+        // Stub this method to prevent unnecessary subscriptions to domain events
+        sinon.stub(DomainEvents, 'subscribe');
+    });
+    afterEach(function () {
+        sinon.restore();
+    });
+
     it('Creates a threshold based on config', async function () {
         const trigger = new VerificationTrigger({
-            importTriggerThreshold: 2,
-            membersStats: {
-                getTotalMembers: async () => 1
+            getImportTriggerThreshold: () => 2,
+            eventRepository: {
+                getSignupEvents: async () => ({
+                    meta: {
+                        pagination: {
+                            total: 1
+                        }
+                    }
+                })
             }
         });
 
@@ -21,9 +36,15 @@ describe('Import threshold', function () {
 
     it('Increases the import threshold to the number of members', async function () {
         const trigger = new VerificationTrigger({
-            importTriggerThreshold: 2,
-            membersStats: {
-                getTotalMembers: async () => 3
+            getImportTriggerThreshold: () => 2,
+            eventRepository: {
+                getSignupEvents: async () => ({
+                    meta: {
+                        pagination: {
+                            total: 3
+                        }
+                    }
+                })
             }
         });
 
@@ -34,9 +55,9 @@ describe('Import threshold', function () {
     it('Does not check members count when config threshold is infinite', async function () {
         const membersStub = sinon.stub().resolves(null);
         const trigger = new VerificationTrigger({
-            importTriggerThreshold: Infinity,
-            memberStats: {
-                getTotalMembers: membersStub
+            getImportTriggerThreshold: () => Infinity,
+            eventRepository: {
+                getSignupEvents: membersStub
             }
         });
 
@@ -47,6 +68,15 @@ describe('Import threshold', function () {
 });
 
 describe('Email verification flow', function () {
+    let domainEventsStub;
+
+    beforeEach(function () {
+        domainEventsStub = sinon.stub(DomainEvents, 'subscribe');
+    });
+    afterEach(function () {
+        sinon.restore();
+    });
+
     it('Triggers verification process', async function () {
         const emailStub = sinon.stub().resolves(null);
         const settingsStub = sinon.stub().resolves(null);
@@ -156,18 +186,32 @@ describe('Email verification flow', function () {
     });
 
     it('Triggers when a number of API events are dispatched', async function () {
+        // We need to use the real event repository here to test event handling
+        domainEventsStub.restore();
         const emailStub = sinon.stub().resolves(null);
         const settingsStub = sinon.stub().resolves(null);
-        const eventStub = sinon.stub().resolves({
-            meta: {
-                pagination: {
-                    total: 10
-                }
+        const eventStub = sinon.stub().callsFake(async (_unused, {source}) => {
+            if (source === 'member') {
+                return {
+                    meta: {
+                        pagination: {
+                            total: 15
+                        }
+                    }
+                };
+            } else {
+                return {
+                    meta: {
+                        pagination: {
+                            total: 10
+                        }
+                    }
+                };
             }
         });
 
         new VerificationTrigger({
-            apiTriggerThreshold: 2,
+            getApiTriggerThreshold: () => 2,
             Settings: {
                 edit: settingsStub
             },
@@ -175,7 +219,7 @@ describe('Email verification flow', function () {
             isVerificationRequired: () => false,
             sendVerificationEmail: emailStub,
             eventRepository: {
-                getCreatedEvents: eventStub
+                getSignupEvents: eventStub
             }
         });
 
@@ -185,46 +229,57 @@ describe('Email verification flow', function () {
         }, new Date()));
 
         eventStub.callCount.should.eql(1);
-        eventStub.lastCall.lastArg.should.have.property('data.source');
-        eventStub.lastCall.lastArg.should.have.property('data.created_at');
-        eventStub.lastCall.lastArg['data.source'].should.eql(`data.source:'api'`);
-        eventStub.lastCall.lastArg['data.created_at'].should.startWith(`data.created_at:>'`);
+        eventStub.lastCall.lastArg.should.have.property('source');
+        eventStub.lastCall.lastArg.source.should.eql('api');
+        eventStub.lastCall.lastArg.should.have.property('created_at');
+        eventStub.lastCall.lastArg.created_at.should.have.property('$gt');
+        eventStub.lastCall.lastArg.created_at.$gt.should.match(/\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}/);
     });
 
     it('Triggers when a number of members are imported', async function () {
         const emailStub = sinon.stub().resolves(null);
         const settingsStub = sinon.stub().resolves(null);
-        const eventStub = sinon.stub().resolves({
-            meta: {
-                pagination: {
-                    total: 10
-                }
+        const eventStub = sinon.stub().callsFake(async (_unused, {source}) => {
+            if (source === 'member') {
+                return {
+                    meta: {
+                        pagination: {
+                            total: 15
+                        }
+                    }
+                };
+            } else {
+                return {
+                    meta: {
+                        pagination: {
+                            total: 10
+                        }
+                    }
+                };
             }
         });
 
         const trigger = new VerificationTrigger({
-            importTriggerThreshold: 2,
+            getImportTriggerThreshold: () => 2,
             Settings: {
                 edit: settingsStub
-            },
-            membersStats: {
-                getTotalMembers: () => 15
             },
             isVerified: () => false,
             isVerificationRequired: () => false,
             sendVerificationEmail: emailStub,
             eventRepository: {
-                getCreatedEvents: eventStub
+                getSignupEvents: eventStub
             }
         });
 
         await trigger.testImportThreshold();
 
-        eventStub.callCount.should.eql(1);
-        eventStub.lastCall.lastArg.should.have.property('data.source');
-        eventStub.lastCall.lastArg.should.have.property('data.created_at');
-        eventStub.lastCall.lastArg['data.source'].should.eql(`data.source:'import'`);
-        eventStub.lastCall.lastArg['data.created_at'].should.startWith(`data.created_at:>'`);
+        eventStub.callCount.should.eql(2);
+        eventStub.firstCall.lastArg.should.have.property('source');
+        eventStub.firstCall.lastArg.source.should.eql('import');
+        eventStub.firstCall.lastArg.should.have.property('created_at');
+        eventStub.firstCall.lastArg.created_at.should.have.property('$gt');
+        eventStub.firstCall.lastArg.created_at.$gt.should.match(/\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}/);
 
         emailStub.callCount.should.eql(1);
         emailStub.lastCall.firstArg.should.eql({
@@ -234,30 +289,105 @@ describe('Email verification flow', function () {
         });
     });
 
-    it('Triggers when a number of members are added from Admin', async function () {
+    it('checkVerificationRequired also checks import', async function () {
         const emailStub = sinon.stub().resolves(null);
-        const settingsStub = sinon.stub().resolves(null);
-        const eventStub = sinon.stub().resolves({
-            meta: {
-                pagination: {
-                    total: 10
-                }
+        let isVerificationRequired = false;
+        const isVerificationRequiredStub = sinon.stub().callsFake(() => {
+            return isVerificationRequired;
+        });
+        const settingsStub = sinon.stub().callsFake(() => {
+            isVerificationRequired = true;
+            return Promise.resolve();
+        });
+        const eventStub = sinon.stub().callsFake(async (_unused, {source}) => {
+            if (source === 'member') {
+                return {
+                    meta: {
+                        pagination: {
+                            total: 15
+                        }
+                    }
+                };
+            } else {
+                return {
+                    meta: {
+                        pagination: {
+                            total: 10
+                        }
+                    }
+                };
             }
         });
 
         const trigger = new VerificationTrigger({
-            adminTriggerThreshold: 2,
+            getImportTriggerThreshold: () => 2,
             Settings: {
                 edit: settingsStub
             },
-            membersStats: {
-                getTotalMembers: () => 15
+            isVerified: () => false,
+            isVerificationRequired: isVerificationRequiredStub,
+            sendVerificationEmail: emailStub,
+            eventRepository: {
+                getSignupEvents: eventStub
+            }
+        });
+
+        assert.equal(await trigger.checkVerificationRequired(), true);
+        sinon.assert.calledOnce(emailStub);
+    });
+
+    it('testImportThreshold does not calculate anything if already verified', async function () {
+        const trigger = new VerificationTrigger({
+            getImportTriggerThreshold: () => 2,
+            isVerified: () => true
+        });
+
+        assert.equal(await trigger.testImportThreshold(), undefined);
+    });
+
+    it('testImportThreshold does not calculate anything if already pending', async function () {
+        const trigger = new VerificationTrigger({
+            getImportTriggerThreshold: () => 2,
+            isVerified: () => false,
+            isVerificationRequired: () => true
+        });
+
+        assert.equal(await trigger.testImportThreshold(), undefined);
+    });
+
+    it('Triggers when a number of members are added from Admin', async function () {
+        const emailStub = sinon.stub().resolves(null);
+        const settingsStub = sinon.stub().resolves(null);
+        const eventStub = sinon.stub().callsFake(async (_unused, {source}) => {
+            if (source === 'member') {
+                return {
+                    meta: {
+                        pagination: {
+                            total: 0
+                        }
+                    }
+                };
+            } else {
+                return {
+                    meta: {
+                        pagination: {
+                            total: 10
+                        }
+                    }
+                };
+            }
+        });
+
+        const trigger = new VerificationTrigger({
+            getAdminTriggerThreshold: () => 2,
+            Settings: {
+                edit: settingsStub
             },
             isVerified: () => false,
             isVerificationRequired: () => false,
             sendVerificationEmail: emailStub,
             eventRepository: {
-                getCreatedEvents: eventStub
+                getSignupEvents: eventStub
             }
         });
 
@@ -267,11 +397,12 @@ describe('Email verification flow', function () {
             }
         });
 
-        eventStub.callCount.should.eql(1);
-        eventStub.lastCall.lastArg.should.have.property('data.source');
-        eventStub.lastCall.lastArg.should.have.property('data.created_at');
-        eventStub.lastCall.lastArg['data.source'].should.eql(`data.source:'admin'`);
-        eventStub.lastCall.lastArg['data.created_at'].should.startWith(`data.created_at:>'`);
+        eventStub.callCount.should.eql(2);
+        eventStub.firstCall.lastArg.should.have.property('source');
+        eventStub.firstCall.lastArg.source.should.eql('admin');
+        eventStub.firstCall.lastArg.should.have.property('created_at');
+        eventStub.firstCall.lastArg.created_at.should.have.property('$gt');
+        eventStub.firstCall.lastArg.created_at.$gt.should.match(/\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}/);
 
         emailStub.callCount.should.eql(1);
         emailStub.lastCall.firstArg.should.eql({
@@ -280,32 +411,41 @@ describe('Email verification flow', function () {
             amountTriggered: 10
         });
     });
-    
+
     it('Triggers when a number of members are added from API', async function () {
         const emailStub = sinon.stub().resolves(null);
         const settingsStub = sinon.stub().resolves(null);
-        const eventStub = sinon.stub().resolves({
-            meta: {
-                pagination: {
-                    total: 10
-                }
+        const eventStub = sinon.stub().callsFake(async (_unused, {source}) => {
+            if (source === 'member') {
+                return {
+                    meta: {
+                        pagination: {
+                            total: 0
+                        }
+                    }
+                };
+            } else {
+                return {
+                    meta: {
+                        pagination: {
+                            total: 10
+                        }
+                    }
+                };
             }
         });
 
         const trigger = new VerificationTrigger({
-            adminTriggerThreshold: 2,
-            apiTriggerThreshold: 2,
+            getAdminTriggerThreshold: () => 2,
+            getApiTriggerThreshold: () => 2,
             Settings: {
                 edit: settingsStub
-            },
-            membersStats: {
-                getTotalMembers: () => 15
             },
             isVerified: () => false,
             isVerificationRequired: () => false,
             sendVerificationEmail: emailStub,
             eventRepository: {
-                getCreatedEvents: eventStub
+                getSignupEvents: eventStub
             }
         });
 
@@ -315,11 +455,12 @@ describe('Email verification flow', function () {
             }
         });
 
-        eventStub.callCount.should.eql(1);
-        eventStub.lastCall.lastArg.should.have.property('data.source');
-        eventStub.lastCall.lastArg.should.have.property('data.created_at');
-        eventStub.lastCall.lastArg['data.source'].should.eql(`data.source:'api'`);
-        eventStub.lastCall.lastArg['data.created_at'].should.startWith(`data.created_at:>'`);
+        eventStub.callCount.should.eql(2);
+        eventStub.firstCall.lastArg.should.have.property('source');
+        eventStub.firstCall.lastArg.source.should.eql('api');
+        eventStub.firstCall.lastArg.should.have.property('created_at');
+        eventStub.firstCall.lastArg.created_at.should.have.property('$gt');
+        eventStub.firstCall.lastArg.created_at.$gt.should.match(/\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}/);
 
         emailStub.callCount.should.eql(1);
         emailStub.lastCall.firstArg.should.eql({
@@ -332,27 +473,36 @@ describe('Email verification flow', function () {
     it('Does not fetch events and trigger when threshold is Infinity', async function () {
         const emailStub = sinon.stub().resolves(null);
         const settingsStub = sinon.stub().resolves(null);
-        const eventStub = sinon.stub().resolves({
-            meta: {
-                pagination: {
-                    total: 10
-                }
+        const eventStub = sinon.stub().callsFake(async (_unused, {source}) => {
+            if (source === 'member') {
+                return {
+                    meta: {
+                        pagination: {
+                            total: 15
+                        }
+                    }
+                };
+            } else {
+                return {
+                    meta: {
+                        pagination: {
+                            total: 10
+                        }
+                    }
+                };
             }
         });
 
         const trigger = new VerificationTrigger({
-            apiTriggerThreshold: Infinity,
+            getImportTriggerThreshold: () => Infinity,
             Settings: {
                 edit: settingsStub
-            },
-            membersStats: {
-                getTotalMembers: () => 15
             },
             isVerified: () => false,
             isVerificationRequired: () => false,
             sendVerificationEmail: emailStub,
             eventRepository: {
-                getCreatedEvents: eventStub
+                getSignupEvents: eventStub
             }
         });
 

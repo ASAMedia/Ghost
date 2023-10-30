@@ -11,7 +11,7 @@ const DEFAULT_COLUMNS = [
     'created_at',
     'deleted_at',
     'labels',
-    'products'
+    'tiers'
 ];
 
 const unparse = (members, columns = DEFAULT_COLUMNS.slice()) => {
@@ -48,13 +48,14 @@ const unparse = (members, columns = DEFAULT_COLUMNS.slice()) => {
             email: member.email,
             name: member.name,
             note: member.note,
-            subscribed_to_emails: member.subscribed,
+            subscribed_to_emails: member.subscribed || member.subscribed_to_emails ? true : false,
             complimentary_plan: member.comped || member.complimentary_plan,
             stripe_customer_id: _.get(member, 'subscriptions[0].customer.id') || member.stripe_customer_id,
             created_at: member.created_at,
             deleted_at: member.deleted_at,
             labels: labels,
-            products: tiers,
+            tiers: tiers,
+            import_tier: member.import_tier || null,
             error: member.error || null
         };
     });

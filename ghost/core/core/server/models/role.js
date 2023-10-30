@@ -1,6 +1,5 @@
 const _ = require('lodash');
 const ghostBookshelf = require('./base');
-const Promise = require('bluebird');
 const tpl = require('@tryghost/tpl');
 const errors = require('@tryghost/errors');
 
@@ -81,9 +80,9 @@ Role = ghostBookshelf.Model.extend({
         if (action === 'assign' && loadedPermissions.user) {
             let checkAgainst;
             if (_.some(loadedPermissions.user.roles, {name: 'Owner'})) {
-                checkAgainst = ['Owner', 'Administrator', 'Editor', 'Author', 'Contributor', 'Planseditor', 'Planseditor Contributor', 'Planseditor Author', 'Planseditor Editor'];
+                checkAgainst = ['Owner', 'Administrator', 'Editor', 'Author', 'Contributor'];
             } else if (_.some(loadedPermissions.user.roles, {name: 'Administrator'})) {
-                checkAgainst = ['Administrator', 'Editor', 'Author', 'Contributor', 'Planseditor', 'Planseditor Contributor', 'Planseditor Author', 'Planseditor Editor'];
+                checkAgainst = ['Administrator', 'Editor', 'Author', 'Contributor'];
             } else if (_.some(loadedPermissions.user.roles, {name: 'Editor'})) {
                 checkAgainst = ['Author', 'Contributor'];
             }

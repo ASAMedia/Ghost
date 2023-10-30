@@ -45,14 +45,6 @@ export default class extends Component {
         return hasAnActivePaidTier;
     }
 
-    get hasSingleNewsletter() {
-        return this.newslettersList?.length === 1;
-    }
-
-    get hasMultipleNewsletters() {
-        return !!(this.newslettersList?.length > 1);
-    }
-
     get isCreatingComplimentary() {
         return this.args.isSaveRunning;
     }
@@ -88,15 +80,15 @@ export default class extends Component {
                 },
                 isComplimentary: !sub.id
             };
-            if (this.feature.get('freeTrial') && sub.trial_end_at) {
+            if (sub.trial_end_at) {
                 const inTrialMode = moment(sub.trial_end_at).isAfter(new Date(), 'day');
                 if (inTrialMode) {
                     data.trialUntil = moment(sub.trial_end_at).format('D MMM YYYY');
                 }
             }
 
-            if (!sub.id && this.feature.get('compExpiring') && sub.tier?.expiry_at) {
-                data.compExpiry = moment(sub.tier.expiry_at).format('D MMM YYYY');
+            if (!sub.id && sub.tier?.expiry_at) {
+                data.compExpiry = moment(sub.tier.expiry_at).utc().format('D MMM YYYY');
             }
             return data;
         });
@@ -122,6 +114,12 @@ export default class extends Component {
             };
         }
         return null;
+    }
+
+    get canShowMultipleNewsletters() {
+        return (
+            this.settings.editorDefaultEmailRecipients !== 'disabled'
+        );
     }
 
     @action

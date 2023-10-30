@@ -11,6 +11,7 @@ import isNumber from 'ghost-admin/utils/isNumber';
 import windowProxy from 'ghost-admin/utils/window-proxy';
 import {TrackedObject} from 'tracked-built-ins';
 import {action} from '@ember/object';
+import {inject} from 'ghost-admin/decorators/inject';
 import {run} from '@ember/runloop';
 import {inject as service} from '@ember/service';
 import {task, taskGroup, timeout} from 'ember-concurrency';
@@ -18,7 +19,6 @@ import {tracked} from '@glimmer/tracking';
 
 export default class UserController extends Controller {
     @service ajax;
-    @service config;
     @service ghostPaths;
     @service membersUtils;
     @service modals;
@@ -26,6 +26,8 @@ export default class UserController extends Controller {
     @service session;
     @service slugGenerator;
     @service utils;
+
+    @inject config;
 
     @tracked dirtyAttributes = false;
     @tracked personalToken = null;
@@ -210,6 +212,21 @@ export default class UserController extends Controller {
     }
 
     @action
+    toggleMentionNotifications(event) {
+        this.user.mentionNotifications = event.target.checked;
+    }
+
+    @action
+    toggleMilestoneNotifications(event) {
+        this.user.milestoneNotifications = event.target.checked;
+    }
+
+    @action
+    toggleDonationNotifications(event) {
+        this.user.donationNotifications = event.target.checked;
+    }
+
+    @action
     toggleMemberEmailAlerts(type, event) {
         if (type === 'free-signup') {
             this.user.freeMemberSignupNotification = event.target.checked;
@@ -314,8 +331,15 @@ export default class UserController extends Controller {
 
     @task
     *saveNewPasswordTask() {
-        yield this.user.saveNewPasswordTask.perform();
-        document.querySelector('#password-reset')?.reset();
+        try {
+            const user = yield this.user.saveNewPasswordTask.perform();
+            document.querySelector('#password-reset')?.reset();
+            return user;
+        } catch (error) {
+            if (error) {
+                this.notifications.showAPIError(error, {key: 'user.update'});
+            }
+        }
     }
 
     @action

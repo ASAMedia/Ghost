@@ -4,6 +4,7 @@ import EmberError from '@ember/error';
 import Service, {inject as service} from '@ember/service';
 import classic from 'ember-classic-decorator';
 import {computed, set} from '@ember/object';
+import {inject} from 'ghost-admin/decorators/inject';
 
 export function feature(name, options = {}) {
     let {user, onChange} = options;
@@ -15,7 +16,7 @@ export function feature(name, options = {}) {
 
             if (user) {
                 enabled = this.get(`accessibility.${name}`);
-            } else if (this.get(`config.${name}`)) {
+            } else if (typeof this.get(`config.${name}`) === 'boolean') {
                 enabled = this.get(`config.${name}`);
             } else {
                 enabled = this.get(`labs.${name}`) || false;
@@ -39,14 +40,13 @@ export function feature(name, options = {}) {
 
 @classic
 export default class FeatureService extends Service {
-    @service store;
-    @service config;
-
+    @service lazyLoader;
+    @service notifications;
     @service session;
     @service settings;
+    @service store;
 
-    @service notifications;
-    @service lazyLoader;
+    @inject config;
 
     // features
     @feature('emailAnalytics') emailAnalytics;
@@ -55,19 +55,29 @@ export default class FeatureService extends Service {
     @feature('nightShift', {user: true, onChange: '_setAdminTheme'})
         nightShift;
 
+    // user-specific referral invitation
+    @feature('referralInviteDismissed', {user: true}) referralInviteDismissed;
+
     // labs flags
     @feature('urlCache') urlCache;
-    @feature('beforeAfterCard') beforeAfterCard;
-    @feature('newsletterPaywall') newsletterPaywall;
-    @feature('freeTrial') freeTrial;
-    @feature('compExpiring') compExpiring;
-    @feature('memberAttribution') memberAttribution;
-    @feature('emailAlerts') emailAlerts;
-    @feature('sourceAttribution') sourceAttribution;
-    @feature('lexicalEditor') lexicalEditor;
-    @feature('exploreApp') exploreApp;
+    @feature('lexicalMultiplayer') lexicalMultiplayer;
     @feature('audienceFeedback') audienceFeedback;
-    @feature('fixNewsletterLinks') fixNewsletterLinks;
+    @feature('webmentions') webmentions;
+    @feature('websockets') websockets;
+    @feature('stripeAutomaticTax') stripeAutomaticTax;
+    @feature('emailCustomization') emailCustomization;
+    @feature('i18n') i18n;
+    @feature('announcementBar') announcementBar;
+    @feature('signupCard') signupCard;
+    @feature('signupForm') signupForm;
+    @feature('collections') collections;
+    @feature('mailEvents') mailEvents;
+    @feature('collectionsCard') collectionsCard;
+    @feature('importMemberTier') importMemberTier;
+    @feature('tipsAndDonations') tipsAndDonations;
+    @feature('recommendations') recommendations;
+    @feature('lexicalIndicators') lexicalIndicators;
+    @feature('editorEmojiPicker') editorEmojiPicker;
 
     _user = null;
 

@@ -1,6 +1,5 @@
 const url = require('url');
 const debug = require('@tryghost/debug')('headers');
-const Promise = require('bluebird');
 const INVALIDATE_ALL = '/*';
 
 const cacheInvalidate = (result, options = {}) => {
@@ -123,7 +122,8 @@ module.exports = {
         }
 
         const locationHeaderDisabled = apiConfigHeaders?.location === false;
-        const hasFrameData = frame?.method === 'add' && result[frame.docName]?.[0]?.id;
+        const hasLocationResolver = apiConfigHeaders?.location?.resolve;
+        const hasFrameData = (frame?.method === 'add' || hasLocationResolver) && result[frame.docName]?.[0]?.id;
 
         if (!locationHeaderDisabled && hasFrameData) {
             const protocol = (frame.original.url.secure === false) ? 'http://' : 'https://';
@@ -133,7 +133,12 @@ module.exports = {
             if (!locationURL.endsWith('/')) {
                 locationURL += '/';
             }
+
             locationURL += `${resourceId}/`;
+
+            if (hasLocationResolver) {
+                locationURL = apiConfigHeaders.location.resolve(locationURL);
+            }
 
             const locationHeader = {
                 Location: locationURL

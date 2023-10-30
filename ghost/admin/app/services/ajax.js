@@ -2,9 +2,12 @@ import AjaxService from 'ember-ajax/services/ajax';
 import classic from 'ember-classic-decorator';
 import config from 'ghost-admin/config/environment';
 import moment from 'moment-timezone';
+import semverCoerce from 'semver/functions/coerce';
+import semverLt from 'semver/functions/lt';
 import {AjaxError, isAjaxError, isForbiddenError} from 'ember-ajax/errors';
 import {captureMessage} from '@sentry/ember';
 import {get} from '@ember/object';
+import {inject} from 'ghost-admin/decorators/inject';
 import {isArray as isEmberArray} from '@ember/array';
 import {isNone} from '@ember/utils';
 import {inject as service} from '@ember/service';
@@ -33,6 +36,22 @@ export function isVersionMismatchError(errorOrStatus, payload) {
         return errorOrStatus instanceof VersionMismatchError;
     } else {
         return get(payload || {}, 'errors.firstObject.type') === 'VersionMismatchError';
+    }
+}
+
+/* DataImport error */
+
+export class DataImportError extends AjaxError {
+    constructor(payload) {
+        super(payload, 'he server encountered an error whilst importing data.');
+    }
+}
+
+export function isDataImportError(errorOrStatus, payload) {
+    if (isAjaxError(errorOrStatus)) {
+        return errorOrStatus instanceof DataImportError;
+    } else {
+        return get(payload || {}, 'errors.firstObject.type') === 'DataImportError';
     }
 }
 
@@ -84,6 +103,17 @@ export function isUnsupportedMediaTypeError(errorOrStatus) {
     }
 }
 
+/**
+ * Returns the code (from the payload) from an error object.
+ * @returns {string|null} error code
+ */
+export function getErrorCode(errorOrStatus) {
+    if (isAjaxError(errorOrStatus) && errorOrStatus.payload && errorOrStatus.payload.errors && Array.isArray(errorOrStatus.payload.errors) && errorOrStatus.payload.errors.length > 0) {
+        return errorOrStatus.payload.errors[0].code || null;
+    }
+    return null;
+}
+
 /* Maintenance error */
 
 export class MaintenanceError extends AjaxError {
@@ -132,6 +162,8 @@ export function isHostLimitError(errorOrStatus, payload) {
     }
 }
 
+/* Email error */
+
 export class EmailError extends AjaxError {
     constructor(payload) {
         super(payload, 'Please verify your email settings');
@@ -163,8 +195,10 @@ export function isAcceptedResponse(errorOrStatus) {
 
 @classic
 class ajaxService extends AjaxService {
-    @service config;
     @service session;
+    @service upgradeStatus;
+
+    @inject config;
 
     // flag to tell our ESA authenticator not to try an invalidate DELETE request
     // because it's been triggered by this service's 401 handling which means the
@@ -265,6 +299,15 @@ class ajaxService extends AjaxService {
     }
 
     handleResponse(status, headers, payload, request) {
+        if (headers['content-version']) {
+            const contentVersion = semverCoerce(headers['content-version']);
+            const appVersion = semverCoerce(config.APP.version);
+
+            if (semverLt(appVersion, contentVersion)) {
+                this.upgradeStatus.refreshRequired = true;
+            }
+        }
+
         if (this.isVersionMismatchError(status, headers, payload)) {
             return new VersionMismatchError(payload);
         } else if (this.isServerUnreachableError(status, headers, payload)) {
@@ -339,6 +382,10 @@ class ajaxService extends AjaxService {
 
     isUnsupportedMediaTypeError(status) {
         return isUnsupportedMediaTypeError(status);
+    }
+
+    isDataImportError(status) {
+        return isDataImportError(status);
     }
 
     isMaintenanceError(status, headers, payload) {

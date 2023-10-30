@@ -5,94 +5,27 @@ require('./utils');
 const sinon = require('sinon');
 
 const {
-    EmailAnalyticsService,
-    EventProcessor
+    EmailAnalyticsService
 } = require('..');
-const EventProcessingResult = require('../lib/event-processing-result');
+const EventProcessingResult = require('../lib/EventProcessingResult');
 
 describe('EmailAnalyticsService', function () {
-    describe('fetchAll', function () {
-        let eventProcessor;
-        let providers;
-        let queries;
-
-        beforeEach(function () {
-            eventProcessor = new EventProcessor();
-            eventProcessor.handleDelivered = sinon.fake.resolves(true);
-            eventProcessor.handleOpened = sinon.fake.resolves(true);
-
-            providers = {
-                testing: {
-                    async fetchAll(batchHandler) {
-                        const result = new EventProcessingResult();
-
-                        // first page
-                        result.merge(await batchHandler([{
-                            type: 'delivered',
-                            emailId: 1,
-                            memberId: 1
-                        }, {
-                            type: 'delivered',
-                            emailId: 1,
-                            memberId: 1
-                        }]));
-
-                        // second page
-                        result.merge(await batchHandler([{
-                            type: 'opened',
-                            emailId: 1,
-                            memberId: 1
-                        }, {
-                            type: 'opened',
-                            emailId: 1,
-                            memberId: 1
-                        }]));
-
-                        return result;
-                    }
-                }
-            };
-
-            queries = {
-                shouldFetchStats: sinon.fake.resolves(true)
+    let eventProcessor;
+    beforeEach(function () {
+        eventProcessor = {};
+        eventProcessor.handleDelivered = sinon.stub().callsFake(({emailId}) => {
+            return {
+                emailId,
+                emailRecipientId: emailId,
+                memberId: 1
             };
         });
-
-        it('uses passed-in providers', async function () {
-            const service = new EmailAnalyticsService({
-                queries,
-                eventProcessor,
-                providers
-            });
-
-            const result = await service.fetchAll();
-
-            queries.shouldFetchStats.calledOnce.should.be.true();
-            eventProcessor.handleDelivered.calledTwice.should.be.true();
-
-            result.should.deepEqual(new EventProcessingResult({
-                delivered: 2,
-                opened: 2,
-                emailIds: [1],
-                memberIds: [1]
-            }));
-        });
-
-        it('skips if queries.shouldFetchStats is falsy', async function () {
-            queries.shouldFetchStats = sinon.fake.resolves(false);
-
-            const service = new EmailAnalyticsService({
-                queries,
-                eventProcessor,
-                providers
-            });
-
-            const result = await service.fetchAll();
-
-            queries.shouldFetchStats.calledOnce.should.be.true();
-            eventProcessor.handleDelivered.called.should.be.false();
-
-            result.should.deepEqual(new EventProcessingResult());
+        eventProcessor.handleOpened = sinon.stub().callsFake(({emailId}) => {
+            return {
+                emailId,
+                emailRecipientId: emailId,
+                memberId: 1
+            };
         });
     });
 
@@ -102,31 +35,41 @@ describe('EmailAnalyticsService', function () {
 
     describe('processEventBatch', function () {
         it('uses passed-in event processor', async function () {
-            const eventProcessor = new EventProcessor();
-            eventProcessor.handleDelivered = sinon.stub().resolves(true);
-
             const service = new EmailAnalyticsService({
                 eventProcessor
             });
 
-            const result = await service.processEventBatch([{
+            const result = new EventProcessingResult();
+            const fetchData = {
+
+            };
+            await service.processEventBatch([{
                 type: 'delivered',
-                emailId: 1
+                emailId: 1,
+                timestamp: new Date(1)
             }, {
                 type: 'delivered',
-                emailId: 2
+                emailId: 2,
+                timestamp: new Date(2)
             }, {
                 type: 'opened',
-                emailId: 1
-            }]);
+                emailId: 1,
+                timestamp: new Date(3)
+            }], result, fetchData);
 
             eventProcessor.handleDelivered.callCount.should.eql(2);
 
             result.should.deepEqual(new EventProcessingResult({
                 delivered: 2,
-                unprocessable: 1,
-                emailIds: [1, 2]
+                opened: 1,
+                unprocessable: 0,
+                emailIds: [1, 2],
+                memberIds: [1]
             }));
+
+            fetchData.should.deepEqual({
+                lastEventTimestamp: new Date(3)
+            });
         });
     });
 

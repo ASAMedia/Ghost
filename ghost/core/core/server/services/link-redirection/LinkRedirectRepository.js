@@ -18,12 +18,12 @@ module.exports = class LinkRedirectRepository {
     }
 
     /**
-     * @param {InstanceType<LinkRedirect>} linkRedirect 
+     * @param {InstanceType<LinkRedirect>} linkRedirect
      * @returns {Promise<void>}
      */
     async save(linkRedirect) {
         const model = await this.#LinkRedirect.add({
-            // Only store the parthname (no support for variable query strings)
+            // Only store the pathname (no support for variable query strings)
             from: this.stripSubdirectoryFromPath(linkRedirect.from.pathname),
             to: linkRedirect.to.href
         }, {});
@@ -36,10 +36,15 @@ module.exports = class LinkRedirectRepository {
     }
 
     fromModel(model) {
+        // Store if link has been edited
+        // Note: in some edge cases updated_at is set directly after created_at, sometimes with a second difference, so we need to check for that
+        const edited = model.get('updated_at')?.getTime() > (model.get('created_at')?.getTime() + 1000);
+
         return new LinkRedirect({
             id: model.id,
             from: new URL(this.#trimLeadingSlash(model.get('from')), this.#urlUtils.urlFor('home', true)),
-            to: new URL(model.get('to'))
+            to: new URL(model.get('to')),
+            edited
         });
     }
 
@@ -55,10 +60,17 @@ module.exports = class LinkRedirectRepository {
         return result;
     }
 
+    async getFilteredIds(options) {
+        const linkRows = await this.#LinkRedirect.getFilteredCollectionQuery(options)
+            .select('redirects.id')
+            .distinct();
+        return linkRows.map(row => row.id);
+    }
+
     /**
-     * 
-     * @param {URL} url 
-     * @returns {Promise<InstanceType<LinkRedirect>|undefined>} linkRedirect 
+     *
+     * @param {URL} url
+     * @returns {Promise<InstanceType<LinkRedirect>|undefined>} linkRedirect
      */
     async getByURL(url) {
         // Strip subdirectory from path

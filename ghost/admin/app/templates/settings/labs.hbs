@@ -23,44 +23,12 @@
                     <div class="gh-expandable-header">
                         <div>
                             <h4 class="gh-expandable-title">Import content</h4>
-                            <p class="gh-expandable-description">Import posts from another Ghost installation</p>
+                            <p class="gh-expandable-description">Import posts from a JSON or zip file</p>
                         </div>
-                        <form id="settings-import" enctype="multipart/form-data">
-                            <GhFileUpload
-                                @id="importfile"
-                                @classNames="flex"
-                                @uploadButtonText={{this.uploadButtonText}}
-                                @onUpload={{action "onUpload"}}
-                                @acceptEncoding={{this.importMimeType}}
-                                data-test-file-input="import"
-                            />
-                        </form>
+                        <LinkTo @route="settings.labs.import" class="gh-btn" data-test-link="import-content">
+                            <span>Open Importer</span>
+                        </LinkTo>
                     </div>
-                    {{#if this.importErrors}}
-                        <div class="gh-import-errors {{if this.importSuccessful "gh-import-errors-alert"}}" data-test-import-errors>
-                            <div class="gh-import-errors-title">
-                                {{#if this.importSuccessful}}
-                                    Import successful with warnings
-                                {{else}}
-                                    Import failed
-                                {{/if}}
-                            </div>
-
-                            {{#each this.importErrors as |error|}}
-                                <div class="gh-import-error" data-test-import-error>
-                                    <p class="gh-import-error-message" data-test-import-error-message>
-                                        {{#if error.help}}{{error.help}}: {{/if}}{{error.message}}
-                                    </p>
-
-                                    {{#if error.context}}
-                                        <div class="gh-import-error-entry" data-test-import-error-context>
-                                            <pre>{{error.context}}</pre>
-                                        </div>
-                                    {{/if}}
-                                </div>
-                            {{/each}}
-                        </div>
-                    {{/if}}
                 </div>
 
                 <div class="gh-expandable-block">
@@ -88,6 +56,33 @@
         <div class="gh-main-section">
             <h4 class="gh-main-section-header small bn">Beta features</h4>
             <div class="gh-expandable">
+
+                <div class="gh-expandable-block">
+                    <div class="gh-expandable-header">
+                        <div>
+                            <h4 class="gh-expandable-title">Substack migrator</h4>
+                            <p class="gh-expandable-description">A <a href="https://ghost.org/help/importing-from-substack/" target="_blank" rel="noopener noreferrer">step-by-step tool</a> to easily import all your content, members and paid subscriptions</p>
+                        </div>
+                        <LinkTo @route="migrate" class="gh-btn" data-test-link="migrate">
+                            <span>Open</span>
+                        </LinkTo>
+                    </div>
+                </div>
+
+                <div class="gh-expandable-block">
+                    <div class="gh-expandable-header">
+                        <div>
+                            <h4 class="gh-expandable-title">Portal translation</h4>
+                            <p class="gh-expandable-description">
+                                Translate your membership flows into your publication language (<a href="https://github.com/TryGhost/Ghost/tree/main/ghost/i18n/locales" target="_blank" rel="noopener noreferrer">supported languages</a>). Don’t see yours? <a href="https://forum.ghost.org/t/help-translate-ghost-beta/37461" target="_blank" rel="noopener noreferrer">Get involved</a>
+                            </p>
+                        </div>
+                        <div class="for-switch">
+                            <GhFeatureFlag @flag="i18n" />
+                        </div>
+                    </div>
+                </div>
+
                 <div class="gh-expandable-block">
                     <GhUploader
                         @extensions={{this.redirectsFileExtensions}}
@@ -196,7 +191,7 @@
                 <div class="gh-expandable-block">
                     <div class="gh-expandable-header">
                         <div>
-                            <h4 class="gh-expandable-title">URL Cache</h4>
+                            <h4 class="gh-expandable-title">URL cache</h4>
                             <p class="gh-expandable-description">
                                Enable URL Caching
                             </p>
@@ -206,94 +201,153 @@
                         </div>
                     </div>
                 </div>
+
                 <div class="gh-expandable-block">
                     <div class="gh-expandable-header">
                         <div>
-                            <h4 class="gh-expandable-title">Cardmageddon - Before/After</h4>
+                            <h4 class="gh-expandable-title">Lexical multiplayer</h4>
                             <p class="gh-expandable-description">
-                                Card for comparing two images
+                                Enables multiplayer editing in the lexical editor.
                             </p>
                         </div>
                         <div class="for-switch">
-                           <GhFeatureFlag @flag="beforeAfterCard" />
+                            <GhFeatureFlag @flag="lexicalMultiplayer" />
                         </div>
                     </div>
                 </div>
                 <div class="gh-expandable-block">
                     <div class="gh-expandable-header">
                         <div>
-                            <h4 class="gh-expandable-title">Member Attribution</h4>
+                            <h4 class="gh-expandable-title">Webmentions</h4>
                             <p class="gh-expandable-description">
-                               Track which posts & pages are driving Member Subscriptions & Paid Conversions
+                                Allows viewing received mentions on the dashboard.
                             </p>
                         </div>
                         <div class="for-switch">
-                           <GhFeatureFlag @flag="memberAttribution" />
+                            <GhFeatureFlag @flag="webmentions" />
                         </div>
                     </div>
                 </div>
                 <div class="gh-expandable-block">
                     <div class="gh-expandable-header">
                         <div>
-                            <h4 class="gh-expandable-title">Source Attribution</h4>
+                            <h4 class="gh-expandable-title">Websockets</h4>
                             <p class="gh-expandable-description">
-                               Track which external sources are driving Member Subscriptions & Paid Conversions (Needs Member Attribution flag)
+                                Test out Websockets functionality at <code>/ghost/#/websockets</code>.
                             </p>
                         </div>
                         <div class="for-switch">
-                           <GhFeatureFlag @flag="sourceAttribution" />
+                            <GhFeatureFlag @flag="websockets" />
                         </div>
                     </div>
                 </div>
                 <div class="gh-expandable-block">
                     <div class="gh-expandable-header">
                         <div>
-                            <h4 class="gh-expandable-title">Lexical editor</h4>
+                            <h4 class="gh-expandable-title">Stripe Automatic Tax</h4>
                             <p class="gh-expandable-description">
-                               Makes lexical editor the default when creating new posts/pages.
+                               Use Stripe Automatic Tax at Stripe Checkout. Needs to be enabled in Stripe
                             </p>
                         </div>
                         <div class="for-switch">
-                           <GhFeatureFlag @flag="lexicalEditor" />
+                            <GhFeatureFlag @flag="stripeAutomaticTax" />
                         </div>
                     </div>
                 </div>
                 <div class="gh-expandable-block">
                     <div class="gh-expandable-header">
                         <div>
-                            <h4 class="gh-expandable-title">Explore app</h4>
+                            <h4 class="gh-expandable-title">Email customization</h4>
                             <p class="gh-expandable-description">
-                               Enable the Explore iframe app.
+                                Adding more control over the newsletter template
                             </p>
                         </div>
                         <div class="for-switch">
-                           <GhFeatureFlag @flag="exploreApp" />
+                            <GhFeatureFlag @flag="emailCustomization" />
                         </div>
                     </div>
                 </div>
+
                 <div class="gh-expandable-block">
                     <div class="gh-expandable-header">
                         <div>
-                            <h4 class="gh-expandable-title">Audience Feedback</h4>
+                            <h4 class="gh-expandable-title">Collections</h4>
                             <p class="gh-expandable-description">
-                               Allow members to provide feedback in newsletters.
+                                Enables Collections 2.0
                             </p>
                         </div>
                         <div class="for-switch">
-                           <GhFeatureFlag @flag="audienceFeedback" />
+                            <GhFeatureFlag @flag="collections" />
                         </div>
                     </div>
                 </div>
+
                 <div class="gh-expandable-block">
                     <div class="gh-expandable-header">
                         <div>
-                            <h4 class="gh-expandable-title">Fix newsletter links</h4>
+                            <h4 class="gh-expandable-title">Collections Card</h4>
                             <p class="gh-expandable-description">
-                               Allow publishers to edit newsletter links after sending.
+                                Enables the Collections Card for pages - requires Collections and the beta Editor to be enabled
                             </p>
                         </div>
                         <div class="for-switch">
-                           <GhFeatureFlag @flag="fixNewsletterLinks" />
+                            <GhFeatureFlag @flag="collectionsCard" />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="gh-expandable-block">
+                    <div class="gh-expandable-header">
+                        <div>
+                            <h4 class="gh-expandable-title">Mail Events</h4>
+                            <p class="gh-expandable-description">
+                                Enables processing of mail events
+                            </p>
+                        </div>
+                        <div class="for-switch">
+                            <GhFeatureFlag @flag="mailEvents" />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="gh-expandable-block">
+                    <div class="gh-expandable-header">
+                        <div>
+                            <h4 class="gh-expandable-title">Lexical indicators</h4>
+                            <p class="gh-expandable-description">
+                                Show L/M indicator on posts list for easier debugging
+                            </p>
+                        </div>
+                        <div class="for-switch">
+                            <GhFeatureFlag @flag="lexicalIndicators" />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="gh-expandable-block">
+                    <div class="gh-expandable-header">
+                        <div>
+                            <h4 class="gh-expandable-title">Import Member Tier</h4>
+                            <p class="gh-expandable-description">
+                                Enables tier to be specified when importing members
+                            </p>
+                        </div>
+                        <div class="for-switch">
+                            <GhFeatureFlag @flag="importMemberTier" />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="gh-expandable-block">
+                    <div class="gh-expandable-header">
+                        <div>
+                            <h4 class="gh-expandable-title">Tips & donations</h4>
+                            <p class="gh-expandable-description">
+                                Enables publishers to collect one-time payments
+                            </p>
+                        </div>
+                        <div class="for-switch">
+                            <GhFeatureFlag @flag="tipsAndDonations" />
                         </div>
                     </div>
                 </div>

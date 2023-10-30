@@ -33,6 +33,10 @@ export default class PublishOptions {
         );
     }
 
+    get willEmailImmediately() {
+        return this.willEmail && !this.isScheduled;
+    }
+
     get willPublish() {
         return this.publishType !== 'send';
     }
@@ -47,7 +51,11 @@ export default class PublishOptions {
     @tracked scheduledAtUTC = this.minScheduledAt;
 
     get minScheduledAt() {
-        return moment.utc().add(5, 'minutes').milliseconds(0);
+        return moment.utc().add(5, 'seconds').milliseconds(0);
+    }
+
+    get defaultScheduledAt() {
+        return moment.utc().add(10, 'minutes').milliseconds(0);
     }
 
     @action
@@ -58,8 +66,8 @@ export default class PublishOptions {
 
         this.isScheduled = shouldSchedule;
 
-        if (shouldSchedule && (!this.scheduledAtUTC || this.scheduledAtUTC.isBefore(this.minScheduledAt))) {
-            this.scheduledAtUTC = this.minScheduledAt;
+        if (shouldSchedule && (!this.scheduledAtUTC || this.scheduledAtUTC.isBefore(this.defaultScheduledAt))) {
+            this.scheduledAtUTC = this.defaultScheduledAt;
         }
     }
 
@@ -164,7 +172,11 @@ export default class PublishOptions {
     }
 
     get recipientFilter() {
-        return this.selectedRecipientFilter === undefined ? this.defaultRecipientFilter : this.selectedRecipientFilter;
+        if (this.selectedRecipientFilter === undefined) {
+            return (this.post.newsletter && this.post.emailSegment) || this.defaultRecipientFilter;
+        } else {
+            return this.selectedRecipientFilter;
+        }
     }
 
     get defaultRecipientFilter() {
@@ -285,7 +297,9 @@ export default class PublishOptions {
         promises.push(this._checkPublishingLimit());
 
         // newsletters
-        promises.push(this.store.query('newsletter', {status: 'active', limit: 'all', include: 'count.members'}));
+        if (!this.user.isContributor) {
+            promises.push(this.store.query('newsletter', {status: 'active', limit: 'all', include: 'count.active_members'}));
+        }
 
         yield Promise.all(promises);
     }
@@ -326,6 +340,7 @@ export default class PublishOptions {
             }
 
             this.post.status = 'draft';
+            this.post.emailOnly = false;
 
             return yield this.post.save();
         } catch (e) {

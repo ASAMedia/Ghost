@@ -3,10 +3,10 @@ import Model, {attr, belongsTo, hasMany} from '@ember-data/model';
 import ValidationEngine from 'ghost-admin/mixins/validation-engine';
 import boundOneWay from 'ghost-admin/utils/bound-one-way';
 import moment from 'moment-timezone';
-import {BLANK_DOC as BLANK_MOBILEDOC} from 'koenig-editor/components/koenig-editor';
 import {compare, isBlank} from '@ember/utils';
 import {computed, observer} from '@ember/object';
 import {equal, filterBy, reads} from '@ember/object/computed';
+import {inject} from 'ghost-admin/decorators/inject';
 import {on} from '@ember/object/evented';
 import {inject as service} from '@ember/service';
 
@@ -67,7 +67,6 @@ function publishedAtCompare(postA, postB) {
 }
 
 export default Model.extend(Comparable, ValidationEngine, {
-    config: service(),
     session: service(),
     feature: service(),
     ghostPaths: service(),
@@ -75,10 +74,13 @@ export default Model.extend(Comparable, ValidationEngine, {
     settings: service(),
     membersUtils: service(),
 
+    config: inject(),
+
     displayName: 'post',
     validationType: 'post',
 
     count: attr(),
+    sentiment: attr(),
     createdAtUTC: attr('moment-utc'),
     excerpt: attr('string'),
     customExcerpt: attr('string'),
@@ -98,20 +100,9 @@ export default Model.extend(Comparable, ValidationEngine, {
     visibility: attr('string'),
     metaDescription: attr('string'),
     metaTitle: attr('string'),
-    mobiledoc: attr('json-string', {defaultValue: (modelInstance) => {
-        if (modelInstance.feature.lexicalEditor) {
-            return null;
-        }
-
-        // avoid modifying any references in the original blank doc object
-        return JSON.parse(JSON.stringify(BLANK_MOBILEDOC));
-    }}),
-    lexical: attr('string', {defaultValue: (modelInstance) => {
-        if (modelInstance.feature.lexicalEditor) {
-            return BLANK_LEXICAL;
-        }
-
-        return null;
+    mobiledoc: attr('json-string'),
+    lexical: attr('string', {defaultValue: () => {
+        return BLANK_LEXICAL;
     }}),
     plaintext: attr('string'),
     publishedAtUTC: attr('moment-utc'),
@@ -128,6 +119,7 @@ export default Model.extend(Comparable, ValidationEngine, {
     featureImage: attr('string'),
     featureImageAlt: attr('string'),
     featureImageCaption: attr('string'),
+    showTitleAndFeatureImage: attr('boolean', {defaultValue: true}),
 
     authors: hasMany('user', {embedded: 'always', async: false}),
     createdBy: belongsTo('user', {async: true}),
@@ -135,6 +127,7 @@ export default Model.extend(Comparable, ValidationEngine, {
     newsletter: belongsTo('newsletter', {embedded: 'always', async: false}),
     publishedBy: belongsTo('user', {async: true}),
     tags: hasMany('tag', {embedded: 'always', async: false}),
+    postRevisions: hasMany('post_revisions', {embedded: 'always', async: false}),
 
     primaryAuthor: reads('authors.firstObject'),
     primaryTag: reads('tags.firstObject'),
@@ -195,8 +188,8 @@ export default Model.extend(Comparable, ValidationEngine, {
             && this.email && this.email.status === 'failed';
     }),
 
-    showAudienceFeedback: computed('count', function () {
-        return this.feature.get('audienceFeedback') && this.count.sentiment !== undefined;
+    showAudienceFeedback: computed('sentiment', function () {
+        return this.feature.get('audienceFeedback') && this.sentiment !== undefined;
     }),
 
     showEmailOpenAnalytics: computed('hasBeenEmailed', 'isSent', 'isPublished', function () {
@@ -219,10 +212,10 @@ export default Model.extend(Comparable, ValidationEngine, {
             && this.settings.emailTrackClicks;
     }),
 
-    showAttributionAnalytics: computed('isPage', 'emailOnly', 'isPublished', 'membersUtils.isMembersInviteOnly', function () {
+    showAttributionAnalytics: computed('isPage', 'emailOnly', 'isPublished', 'membersUtils.isMembersInviteOnly', 'settings.membersTrackSources', function () {
         return (this.isPage || !this.emailOnly)
                 && this.isPublished
-                && this.feature.get('memberAttribution')
+                && this.settings.membersTrackSources
                 && !this.membersUtils.isMembersInviteOnly
                 && !this.session.user.isContributor;
     }),
@@ -231,6 +224,7 @@ export default Model.extend(Comparable, ValidationEngine, {
 
     hasAnalyticsPage: computed('isPost', 'showEmailOpenAnalytics', 'showEmailClickAnalytics', 'showAttributionAnalytics', function () {
         return this.isPost
+            && this.session.user.isAdmin
             && (
                 this.showEmailOpenAnalytics
                 || this.showEmailClickAnalytics
@@ -249,6 +243,8 @@ export default Model.extend(Comparable, ValidationEngine, {
         }
         return this.get('ghostPaths.url').join(blogUrl, previewKeyword, uuid);
     }),
+
+    isFeedbackEnabledForEmail: computed.reads('email.feedbackEnabled'),
 
     isPublic: computed('visibility', function () {
         return this.visibility === 'public' ? true : false;

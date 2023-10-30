@@ -1,19 +1,22 @@
-const assert = require('assert');
+const assert = require('assert/strict');
 const fetch = require('node-fetch').default;
 const {agentProvider, mockManager, fixtureManager} = require('../utils/e2e-framework');
 const urlUtils = require('../../core/shared/url-utils');
+const jobService = require('../../core/server/services/jobs/job-service');
 
 describe('Click Tracking', function () {
     let agent;
 
     before(async function () {
-        agent = await agentProvider.getAdminAPIAgent();
+        const {adminAgent} = await agentProvider.getAgentsWithFrontend();
+        agent = adminAgent;
         await fixtureManager.init('newsletters', 'members:newsletters');
         await agent.loginAsOwner();
     });
 
     beforeEach(function () {
         mockManager.mockMail();
+        mockManager.mockMailgun();
     });
 
     afterEach(function () {
@@ -41,6 +44,9 @@ describe('Click Tracking', function () {
                 }
             }
         );
+
+        // Wait for the newsletter to be sent
+        await jobService.allSettled();
 
         const {body: {links}} = await agent.get(
             `/links/?filter=post_id:${post.id}`

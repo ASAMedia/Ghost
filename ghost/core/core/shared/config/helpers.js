@@ -68,7 +68,7 @@ const isPrivacyDisabled = function isPrivacyDisabled(privacyFlag) {
  */
 const getContentPath = function getContentPath(type) {
     switch (type) {
-    case 'root':
+case 'root':
         return path.join(this.get('paths:contentPath'), '../');
     case 'images':
         return path.join(this.get('paths:contentPath'), 'images/');
@@ -91,7 +91,7 @@ const getContentPath = function getContentPath(type) {
     default:
         // new Error is allowed here, as we do not want config to depend on @tryghost/error
         // @TODO: revisit this decision when @tryghost/error is no longer dependent on all of ghost-ignition
-        // eslint-disable-next-line no-restricted-syntax
+        // eslint-disable-next-line ghost/ghost-custom/no-native-error
         throw new Error('getContentPath was called with: ' + type);
     }
 };

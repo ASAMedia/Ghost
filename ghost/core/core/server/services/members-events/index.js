@@ -19,17 +19,20 @@ class MembersEventsServiceWrapper {
             models: {
                 MemberCreatedEvent: models.MemberCreatedEvent,
                 SubscriptionCreatedEvent: models.SubscriptionCreatedEvent
-            }, 
+            },
             labsService
         });
+
+        const db = require('../../data/db');
 
         this.lastSeenAtUpdater = new LastSeenAtUpdater({
             services: {
                 settingsCache
             },
-            async getMembersApi() {
+            getMembersApi() {
                 return members.api;
-            }
+            },
+            db
         });
 
         this.eventStorage.subscribe(DomainEvents);

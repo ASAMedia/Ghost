@@ -21,9 +21,18 @@ const {settingsCache, labs} = proxy;
  * So these changes become visible in PR's.
  */
 async function testGhostHead(options) {
-    const rendered = await ghost_head(options);
+    let rendered = (await ghost_head(options)).toString();
+
+    // Ignore some parts of the response by replacing regexes
+    const portalVersion = /portal@~\d+\.\d+(\.\d+)?\//g;
+    rendered = rendered.replace(portalVersion, 'portal@~[[VERSION]]/');
+
+    const sodoSearchVersion = /sodo-search@~\d+\.\d+(\.\d+)?\//g;
+    rendered = rendered.replace(sodoSearchVersion, 'sodo-search@~[[VERSION]]/');
+
     should.exist(rendered);
-    rendered.should.matchSnapshot();
+    // Note: we need to convert the string to an object in order to use the snapshot feature
+    should({rendered}).matchSnapshot();
     return rendered;
 }
 
@@ -92,6 +101,18 @@ describe('{{ghost_head}} helper', function () {
             profile_image: '/content/images/test-author-image.png',
             cover_image: '/content/images/author-cover-image.png',
             website: 'http://authorwebsite.com',
+            updated_at: new Date(0)
+        }));
+
+        // User without profile image but with cover image
+        users.push(createUser({
+            name: 'Author name',
+            slug: 'AuthorName2',
+            bio: 'Author bio',
+            cover_image: '/content/images/author-cover-image.png',
+            website: 'http://authorwebsite.com',
+            facebook: 'testuser',
+            twitter: '@testuser',
             updated_at: new Date(0)
         }));
 
@@ -345,6 +366,7 @@ describe('{{ghost_head}} helper', function () {
         settingsCache.get.withArgs('cover_image').returns('/content/images/site-cover.png');
         settingsCache.get.withArgs('amp').returns(true);
         settingsCache.get.withArgs('comments_enabled').returns('off');
+        settingsCache.get.withArgs('members_track_sources').returns(true);
 
         // Force the usage of a fixed asset hash so we have reliable snapshots
         configUtils.set('assetHash', 'asset-hash');
@@ -352,9 +374,9 @@ describe('{{ghost_head}} helper', function () {
         makeFixtures();
     });
 
-    afterEach(function () {
+    afterEach(async function () {
         sinon.restore();
-        configUtils.restore();
+        await configUtils.restore();
     });
 
     describe('without Code Injection', function () {
@@ -484,6 +506,7 @@ describe('{{ghost_head}} helper', function () {
                     safeVersion: '0.3'
                 }
             }));
+            renderObject.post.should.eql(postBk);
         });
 
         it('returns structured data on post page with custom excerpt for description and meta description', async function () {
@@ -703,7 +726,7 @@ describe('{{ghost_head}} helper', function () {
 
         it('returns structured data and schema on first author page with cover image', async function () {
             await testGhostHead(testUtils.createHbsResponse({
-                renderObject: {author: users[0]},
+                renderObject: {author: users[2]},
                 locals: {
                     // @TODO: WHY?
                     relativeUrl: '/author/authorname/',
@@ -1100,6 +1123,34 @@ describe('{{ghost_head}} helper', function () {
     describe('search scripts', function () {
         it('includes search when labs flag enabled', async function () {
             sinon.stub(labs, 'isSet').returns(true);
+
+            await testGhostHead(testUtils.createHbsResponse({
+                locals: {
+                    relativeUrl: '/',
+                    context: ['home', 'index'],
+                    safeVersion: '4.3'
+                }
+            }));
+        });
+    });
+
+    describe('attribution scripts', function () {
+        it('is included when tracking setting is enabled', async function () {
+            settingsCache.get.withArgs('members_track_sources').returns(true);
+            settingsCache.get.withArgs('members_enabled').returns(true);
+
+            await testGhostHead(testUtils.createHbsResponse({
+                locals: {
+                    relativeUrl: '/',
+                    context: ['home', 'index'],
+                    safeVersion: '4.3'
+                }
+            }));
+        });
+
+        it('is not included when tracking setting is disabled', async function () {
+            settingsCache.get.withArgs('members_track_sources').returns(false);
+            settingsCache.get.withArgs('members_enabled').returns(true);
 
             await testGhostHead(testUtils.createHbsResponse({
                 locals: {

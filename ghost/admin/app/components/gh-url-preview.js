@@ -2,16 +2,16 @@ import Component from '@ember/component';
 import classic from 'ember-classic-decorator';
 import {classNames} from '@ember-decorators/component';
 import {computed} from '@ember/object';
-import {inject as service} from '@ember/service';
+import {inject} from 'ghost-admin/decorators/inject';
 
 /*
 Example usage:
-{{gh-url-preview prefix="tag" slug=theSlugValue tagName="p" classNames="description"}}
+<GhUrlPreview @prefix="tag" @slug={{theSlugValue}} @tagName="p" @classNames="description" />
 */
 @classic
 @classNames('ghost-url-preview')
 export default class GhUrlPreview extends Component {
-    @service config;
+    @inject config;
 
     prefix = null;
     slug = null;

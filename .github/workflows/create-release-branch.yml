@@ -26,24 +26,24 @@ jobs:
       - run: echo "BASE_REF=${{ inputs.base-ref }}" >> $GITHUB_ENV
         if: inputs.base-ref != 'latest'
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           ref: ${{ env.BASE_REF }}
           fetch-depth: 0
           submodules: true
 
       - name: Checkout most recent tag
-        run: git checkout $(git describe --tags --abbrev=0)
+        run: git checkout $(git describe --tags --abbrev=0 --match=v*)
         if: inputs.base-ref == 'latest'
 
-      - uses: asdf-vm/actions/install@v1
+      - uses: asdf-vm/actions/install@v2
         with:
           tool_versions: |
             semver 3.3.0
 
       - run: |
           echo "CURRENT_SHA=$(git rev-parse HEAD)" >> $GITHUB_ENV
-          echo "NEW_VERSION=$(semver bump ${{ inputs.bump-type }} $(git describe --tags --abbrev=0))" >> $GITHUB_ENV
+          echo "NEW_VERSION=$(semver bump ${{ inputs.bump-type }} $(git describe --tags --abbrev=0 --match=v*))" >> $GITHUB_ENV
 
       - name: Create branch
         uses: actions/github-script@v6

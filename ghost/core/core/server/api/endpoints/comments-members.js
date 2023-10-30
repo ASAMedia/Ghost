@@ -6,6 +6,9 @@ module.exports = {
     docName: 'comments',
 
     browse: {
+        headers: {
+            cacheInvalidate: false
+        },
         options: [
             'include',
             'page',
@@ -27,6 +30,9 @@ module.exports = {
     },
 
     replies: {
+        headers: {
+            cacheInvalidate: false
+        },
         options: [
             'include',
             'page',
@@ -49,6 +55,9 @@ module.exports = {
     },
 
     read: {
+        headers: {
+            cacheInvalidate: false
+        },
         options: [
             'include'
         ],
@@ -68,7 +77,9 @@ module.exports = {
     },
 
     edit: {
-        headers: {},
+        headers: {
+            cacheInvalidate: false
+        },
         options: [
             'id',
             'include'
@@ -91,6 +102,9 @@ module.exports = {
 
     add: {
         statusCode: 201,
+        headers: {
+            cacheInvalidate: false
+        },
         options: [
             'include'
 
@@ -115,6 +129,9 @@ module.exports = {
 
     destroy: {
         statusCode: 204,
+        headers: {
+            cacheInvalidate: false
+        },
         options: [
             'include',
             'id'
@@ -131,7 +148,13 @@ module.exports = {
     },
 
     counts: {
+        headers: {
+            cacheInvalidate: false
+        },
         permissions: false,
+        options: [
+            'ids'
+        ],
         async query(frame) {
             return commentsService.controller.count(frame);
         }
@@ -139,6 +162,9 @@ module.exports = {
 
     like: {
         statusCode: 204,
+        headers: {
+            cacheInvalidate: false
+        },
         options: [
             'id'
         ],
@@ -152,6 +178,9 @@ module.exports = {
 
     unlike: {
         statusCode: 204,
+        headers: {
+            cacheInvalidate: false
+        },
         options: [
             'id'
         ],
@@ -164,6 +193,9 @@ module.exports = {
 
     report: {
         statusCode: 204,
+        headers: {
+            cacheInvalidate: false
+        },
         options: [
             'id'
         ],

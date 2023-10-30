@@ -10,7 +10,8 @@ export default class MembersRoute extends AdminRoute {
         searchParam: {refreshModel: true, replace: true},
         paidParam: {refreshModel: true},
         orderParam: {refreshModel: true},
-        filterParam: {refreshModel: true}
+        filterParam: {refreshModel: true},
+        postAnalytics: {refreshModel: false}
     };
 
     beforeModel() {
@@ -27,6 +28,19 @@ export default class MembersRoute extends AdminRoute {
     setupController(controller) {
         super.setupController(...arguments);
         controller.fetchLabelsTask.perform();
+    }
+
+    resetController(controller, _isExiting, transition) {
+        super.resetController(...arguments);
+
+        if (controller.postAnalytics) {
+            controller.set('postAnalytics', null);
+            // Only reset filters if we are not going to member route
+            // Otherwise the filters will be gone if we return
+            if (!transition?.to?.name?.startsWith('member')) {
+                controller.set('filterParam', null);
+            }
+        }
     }
 
     buildRouteInfoMetadata() {

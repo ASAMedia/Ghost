@@ -1,4 +1,4 @@
-const assert = require('assert');
+const assert = require('assert/strict');
 const nock = require('nock');
 const sinon = require('sinon');
 
@@ -9,7 +9,25 @@ const MailgunClient = require('../');
 const MAILGUN_OPTIONS = {
     event: 'delivered OR opened OR failed OR unsubscribed OR complained',
     limit: 300,
-    tags: 'bulk-email'
+    tags: 'bulk-email',
+    begin: 1606399301.266
+};
+
+const createBatchCounter = (customHandler) => {
+    const batchCounter = {
+        events: 0,
+        batches: 0
+    };
+
+    batchCounter.batchHandler = async (events) => {
+        batchCounter.events += events.length;
+        batchCounter.batches += 1;
+        if (customHandler) {
+            await customHandler(events);
+        }
+    };
+
+    return batchCounter;
 };
 
 describe('MailgunClient', function () {
@@ -25,8 +43,19 @@ describe('MailgunClient', function () {
         sinon.restore();
     });
 
-    it('exports a number for BATCH_SIZE', function () {
-        assert(typeof MailgunClient.BATCH_SIZE === 'number');
+    it('exports a number for configurable batch size', function () {
+        const configStub = sinon.stub(config, 'get');
+        configStub.withArgs('bulkEmail').returns({
+            mailgun: {
+                apiKey: 'apiKey',
+                domain: 'domain.com',
+                baseUrl: 'https://api.mailgun.net/v3'
+            },
+            batchSize: 1000
+        });
+
+        const mailgunClient = new MailgunClient({config, settings});
+        assert(typeof mailgunClient.getBatchSize() === 'number');
     });
 
     it('can connect via config', function () {
@@ -36,7 +65,8 @@ describe('MailgunClient', function () {
                 apiKey: 'apiKey',
                 domain: 'domain.com',
                 baseUrl: 'https://api.mailgun.net/v3'
-            }
+            },
+            batchSize: 1000
         });
 
         const mailgunClient = new MailgunClient({config, settings});
@@ -98,7 +128,8 @@ describe('MailgunClient', function () {
                 apiKey: 'apiKey',
                 domain: 'configdomain.com',
                 baseUrl: 'https://api.mailgun.net'
-            }
+            },
+            batchSize: 1000
         });
 
         const settingsStub = sinon.stub(settings, 'get');
@@ -132,18 +163,17 @@ describe('MailgunClient', function () {
             const mailgunClient = new MailgunClient({config, settings});
             const response = await mailgunClient.send({}, {}, []);
 
-            assert.strictEqual(response, null);
+            assert.equal(response, null);
         });
     });
 
     describe('fetchEvents()', function () {
         it('does not fetch if not configured', async function () {
-            const batchHandler = sinon.spy();
+            const counter = createBatchCounter();
             const mailgunClient = new MailgunClient({config, settings});
-            const events = await mailgunClient.fetchEvents(MAILGUN_OPTIONS, batchHandler);
-
-            assert.equal(events.length, 0);
-            assert.equal(batchHandler.callCount, 0);
+            await mailgunClient.fetchEvents(MAILGUN_OPTIONS, counter.batchHandler);
+            assert.equal(counter.events, 0);
+            assert.equal(counter.batches, 0);
         });
 
         it('fetches from now and works backwards', async function () {
@@ -153,7 +183,8 @@ describe('MailgunClient', function () {
                     apiKey: 'apiKey',
                     domain: 'domain.com',
                     baseUrl: 'https://api.mailgun.net/v3'
-                }
+                },
+                batchSize: 1000
             });
 
             const firstPageMock = nock('https://api.mailgun.net')
@@ -178,24 +209,27 @@ describe('MailgunClient', function () {
                     'Content-Type': 'application/json'
                 });
 
-            const batchHandler = sinon.spy();
+            const counter = createBatchCounter();
 
             const mailgunClient = new MailgunClient({config, settings});
-            await mailgunClient.fetchEvents(MAILGUN_OPTIONS, batchHandler);
+            await mailgunClient.fetchEvents(MAILGUN_OPTIONS, counter.batchHandler);
 
             assert.equal(firstPageMock.isDone(), true);
             assert.equal(secondPageMock.isDone(), true);
-            assert.equal(batchHandler.callCount, 2); // one per page
+            assert.equal(counter.batches, 2);
+            assert.equal(counter.events, 6);
         });
 
-        it('fetches with a limit', async function () {
+        // This tests the deadlock possibility (if we would stop after x events, we would retry the same events again and again)
+        it('keeps fetching over the limit if events have the same timestamp as begin', async function () {
             const configStub = sinon.stub(config, 'get');
             configStub.withArgs('bulkEmail').returns({
                 mailgun: {
                     apiKey: 'apiKey',
                     domain: 'domain.com',
                     baseUrl: 'https://api.mailgun.net/v3'
-                }
+                },
+                batchSize: 1000
             });
 
             const firstPageMock = nock('https://api.mailgun.net')
@@ -207,6 +241,7 @@ describe('MailgunClient', function () {
 
             const secondPageMock = nock('https://api.mailgun.net')
                 .get('/v3/domain.com/events/all-1-next')
+                .query(MAILGUN_OPTIONS)
                 .replyWithFile(200, `${__dirname}/fixtures/all-2.json`, {
                     'Content-Type': 'application/json'
                 });
@@ -214,21 +249,114 @@ describe('MailgunClient', function () {
             // requests continue until an empty items set is returned
             nock('https://api.mailgun.net')
                 .get('/v3/domain.com/events/all-2-next')
+                .query(MAILGUN_OPTIONS)
                 .replyWithFile(200, `${__dirname}/fixtures/empty.json`, {
                     'Content-Type': 'application/json'
                 });
 
-            const batchHandler = sinon.stub().returnsArg(0);
+            const counter = createBatchCounter();
 
             const maxEvents = 3;
 
             const mailgunClient = new MailgunClient({config, settings});
-            const events = await mailgunClient.fetchEvents(MAILGUN_OPTIONS, batchHandler, {maxEvents});
 
-            assert.equal(events.length, 4); // `maxEvents` is 3 but the first page contains 4 events
+            await mailgunClient.fetchEvents(MAILGUN_OPTIONS, counter.batchHandler, {maxEvents});
+            assert.equal(counter.batches, 2);
+            assert.equal(counter.events, 6);
+            assert.equal(firstPageMock.isDone(), true);
+            assert.equal(secondPageMock.isDone(), true);
+        });
+
+        it('fetches with a limit and stops if timestamp difference reached', async function () {
+            const configStub = sinon.stub(config, 'get');
+            configStub.withArgs('bulkEmail').returns({
+                mailgun: {
+                    apiKey: 'apiKey',
+                    domain: 'domain.com',
+                    baseUrl: 'https://api.mailgun.net/v3'
+                },
+                batchSize: 1000
+            });
+
+            const firstPageMock = nock('https://api.mailgun.net')
+                .get('/v3/domain.com/events')
+                .query(MAILGUN_OPTIONS)
+                .replyWithFile(200, `${__dirname}/fixtures/all-1-timestamp.json`, {
+                    'Content-Type': 'application/json'
+                });
+
+            const secondPageMock = nock('https://api.mailgun.net')
+                .get('/v3/domain.com/events/all-1-next')
+                .query(MAILGUN_OPTIONS)
+                .replyWithFile(200, `${__dirname}/fixtures/all-2.json`, {
+                    'Content-Type': 'application/json'
+                });
+
+            // requests continue until an empty items set is returned
+            nock('https://api.mailgun.net')
+                .get('/v3/domain.com/events/all-2-next')
+                .query(MAILGUN_OPTIONS)
+                .replyWithFile(200, `${__dirname}/fixtures/empty.json`, {
+                    'Content-Type': 'application/json'
+                });
+
+            const counter = createBatchCounter();
+
+            const maxEvents = 3;
+
+            const mailgunClient = new MailgunClient({config, settings});
+
+            await mailgunClient.fetchEvents(MAILGUN_OPTIONS, counter.batchHandler, {maxEvents});
+            assert.equal(counter.batches, 1);
+            assert.equal(counter.events, 4);
             assert.equal(firstPageMock.isDone(), true);
             assert.equal(secondPageMock.isDone(), false);
-            assert.equal(batchHandler.callCount, 1);
+        });
+
+        it('logs errors and rethrows during processing', async function () {
+            const configStub = sinon.stub(config, 'get');
+            configStub.withArgs('bulkEmail').returns({
+                mailgun: {
+                    apiKey: 'apiKey',
+                    domain: 'domain.com',
+                    baseUrl: 'https://api.mailgun.net/v3'
+                },
+                batchSize: 1000
+            });
+
+            const firstPageMock = nock('https://api.mailgun.net')
+                .get('/v3/domain.com/events')
+                .query(MAILGUN_OPTIONS)
+                .replyWithFile(200, `${__dirname}/fixtures/all-1-timestamp.json`, {
+                    'Content-Type': 'application/json'
+                });
+
+            const secondPageMock = nock('https://api.mailgun.net')
+                .get('/v3/domain.com/events/all-1-next')
+                .query(MAILGUN_OPTIONS)
+                .replyWithFile(200, `${__dirname}/fixtures/all-2.json`, {
+                    'Content-Type': 'application/json'
+                });
+
+            // requests continue until an empty items set is returned
+            nock('https://api.mailgun.net')
+                .get('/v3/domain.com/events/all-2-next')
+                .query(MAILGUN_OPTIONS)
+                .replyWithFile(200, `${__dirname}/fixtures/empty.json`, {
+                    'Content-Type': 'application/json'
+                });
+
+            const counter = createBatchCounter(() => {
+                throw new Error('test error');
+            });
+
+            const mailgunClient = new MailgunClient({config, settings});
+
+            await assert.rejects(mailgunClient.fetchEvents(MAILGUN_OPTIONS, counter.batchHandler), /test error/);
+            assert.equal(counter.batches, 1);
+            assert.equal(counter.events, 4);
+            assert.equal(firstPageMock.isDone(), true);
+            assert.equal(secondPageMock.isDone(), false);
         });
 
         it('supports EU Mailgun domain', async function () {
@@ -238,7 +366,8 @@ describe('MailgunClient', function () {
                     apiKey: 'apiKey',
                     domain: 'domain.com',
                     baseUrl: 'https://api.eu.mailgun.net/v3'
-                }
+                },
+                batchSize: 1000
             });
 
             const firstPageMock = nock('https://api.eu.mailgun.net')
@@ -277,6 +406,7 @@ describe('MailgunClient', function () {
     describe('normalizeEvent()', function () {
         it('works', function () {
             const event = {
+                id: 'pl271FzxTTmGRW8Uj3dUWw',
                 event: 'testEvent',
                 severity: 'testSeverity',
                 recipient: 'testRecipient',
@@ -294,13 +424,153 @@ describe('MailgunClient', function () {
             const mailgunClient = new MailgunClient({config, settings});
             const result = mailgunClient.normalizeEvent(event);
 
-            assert.deepStrictEqual(result, {
+            assert.deepEqual(result, {
                 type: 'testEvent',
                 severity: 'testSeverity',
                 recipientEmail: 'testRecipient',
                 emailId: 'testEmailId',
                 providerId: 'testProviderId',
-                timestamp: new Date('2021-02-25T17:54:22.000Z')
+                timestamp: new Date('2021-02-25T17:54:22.000Z'),
+                error: null,
+                id: 'pl271FzxTTmGRW8Uj3dUWw'
+            });
+        });
+
+        it('works for errors', function () {
+            const event = {
+                event: 'failed',
+                id: 'pl271FzxTTmGRW8Uj3dUWw',
+                'log-level': 'error',
+                severity: 'permanent',
+                reason: 'suppress-bounce',
+                envelope: {
+                    sender: 'john@example.org',
+                    transport: 'smtp',
+                    targets: 'joan@example.com'
+                },
+                flags: {
+                    'is-routed': false,
+                    'is-authenticated': true,
+                    'is-system-test': false,
+                    'is-test-mode': false
+                },
+                'delivery-status': {
+                    'attempt-no': 1,
+                    message: '',
+                    code: 605,
+                    description: 'Not delivering to previously bounced address',
+                    'session-seconds': 0.0
+                },
+                message: {
+                    headers: {
+                        to: 'joan@example.com',
+                        'message-id': 'testProviderId',
+                        from: 'john@example.org',
+                        subject: 'Test Subject'
+                    },
+                    attachments: [],
+                    size: 867
+                },
+                storage: {
+                    url: 'https://se.api.mailgun.net/v3/domains/example.org/messages/eyJwI...',
+                    key: 'eyJwI...'
+                },
+                recipient: 'testRecipient',
+                'recipient-domain': 'mailgun.com',
+                campaigns: [],
+                tags: [],
+                'user-variables': {},
+                timestamp: 1614275662
+            };
+
+            const mailgunClient = new MailgunClient({config, settings});
+            const result = mailgunClient.normalizeEvent(event);
+
+            assert.deepEqual(result, {
+                type: 'failed',
+                severity: 'permanent',
+                recipientEmail: 'testRecipient',
+                emailId: undefined,
+                providerId: 'testProviderId',
+                timestamp: new Date('2021-02-25T17:54:22.000Z'),
+                error: {
+                    code: 605,
+                    enhancedCode: null,
+                    message: 'Not delivering to previously bounced address'
+                },
+                id: 'pl271FzxTTmGRW8Uj3dUWw'
+            });
+        });
+
+        it('works for enhanced errors', function () {
+            const event = {
+                event: 'failed',
+                id: 'pl271FzxTTmGRW8Uj3dUWw',
+                'log-level': 'error',
+                severity: 'permanent',
+                reason: 'suppress-bounce',
+                envelope: {
+                    sender: 'john@example.org',
+                    transport: 'smtp',
+                    targets: 'joan@example.com'
+                },
+                flags: {
+                    'is-routed': false,
+                    'is-authenticated': true,
+                    'is-system-test': false,
+                    'is-test-mode': false
+                },
+                'delivery-status': {
+                    tls: true,
+                    'mx-host': 'hotmail-com.olc.protection.outlook.com',
+                    code: 451,
+                    description: '',
+                    'session-seconds': 0.7517080307006836,
+                    utf8: true,
+                    'retry-seconds': 600,
+                    'enhanced-code': '4.7.652',
+                    'attempt-no': 1,
+                    message: '4.7.652 The mail server [xxx.xxx.xxx.xxx] has exceeded the maximum number of connections.',
+                    'certificate-verified': true
+                },
+                message: {
+                    headers: {
+                        to: 'joan@example.com',
+                        'message-id': 'testProviderId',
+                        from: 'john@example.org',
+                        subject: 'Test Subject'
+                    },
+                    attachments: [],
+                    size: 867
+                },
+                storage: {
+                    url: 'https://se.api.mailgun.net/v3/domains/example.org/messages/eyJwI...',
+                    key: 'eyJwI...'
+                },
+                recipient: 'testRecipient',
+                'recipient-domain': 'mailgun.com',
+                campaigns: [],
+                tags: [],
+                'user-variables': {},
+                timestamp: 1614275662
+            };
+
+            const mailgunClient = new MailgunClient({config, settings});
+            const result = mailgunClient.normalizeEvent(event);
+
+            assert.deepEqual(result, {
+                type: 'failed',
+                severity: 'permanent',
+                recipientEmail: 'testRecipient',
+                emailId: undefined,
+                providerId: 'testProviderId',
+                timestamp: new Date('2021-02-25T17:54:22.000Z'),
+                error: {
+                    code: 451,
+                    enhancedCode: '4.7.652',
+                    message: '4.7.652 The mail server [xxx.xxx.xxx.xxx] has exceeded the maximum number of connections.'
+                },
+                id: 'pl271FzxTTmGRW8Uj3dUWw'
             });
         });
     });

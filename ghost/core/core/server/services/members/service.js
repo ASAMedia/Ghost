@@ -3,11 +3,10 @@ const errors = require('@tryghost/errors');
 const tpl = require('@tryghost/tpl');
 const MembersSSR = require('@tryghost/members-ssr');
 const db = require('../../data/db');
-const MembersConfigProvider = require('./config');
-const MembersCSVImporter = require('@tryghost/members-importer');
-const MembersStats = require('./stats/members-stats');
+const MembersConfigProvider = require('./MembersConfigProvider');
+const makeMembersCSVImporter = require('@tryghost/members-importer');
+const MembersStats = require('./stats/MembersStats');
 const memberJobs = require('./jobs');
-const createMembersSettingsInstance = require('./settings');
 const logging = require('@tryghost/logging');
 const urlUtils = require('../../../shared/url-utils');
 const labsService = require('../../../shared/labs');
@@ -16,6 +15,7 @@ const config = require('../../../shared/config');
 const models = require('../../models');
 const {GhostMailer} = require('../mail');
 const jobsService = require('../jobs');
+const tiersService = require('../tiers');
 const VerificationTrigger = require('@tryghost/verification-trigger');
 const DatabaseInfo = require('@tryghost/database-info');
 const settingsHelpers = require('../settings-helpers');
@@ -41,30 +41,73 @@ const membersStats = new MembersStats({
 });
 
 let membersApi;
-let membersSettings;
-let verificationTrigger;
 
-const membersImporter = new MembersCSVImporter({
-    storagePath: config.getContentPath('data'),
-    getTimezone: () => settingsCache.get('timezone'),
-    getMembersApi: () => module.exports.api,
-    sendEmail: ghostMailer.send.bind(ghostMailer),
-    isSet: labsService.isSet.bind(labsService),
-    addJob: jobsService.addJob.bind(jobsService),
-    knex: db.knex,
-    urlFor: urlUtils.urlFor.bind(urlUtils),
-    context: {
-        importer: true
-    }
-});
+const initMembersCSVImporter = ({stripeAPIService}) => {
+    return makeMembersCSVImporter({
+        storagePath: config.getContentPath('data'),
+        getTimezone: () => settingsCache.get('timezone'),
+        getMembersRepository: async () => {
+            const api = await module.exports.api;
+            return api.members;
+        },
+        getDefaultTier: () => {
+            return tiersService.api.readDefaultTier();
+        },
+        getTierByName: async (name) => {
+            const tiers = await tiersService.api.browse({
+                filter: `name:'${name}'`
+            });
 
-const processImport = async (options) => {
-    const result = await membersImporter.process(options);
+            if (tiers.data.length > 0) {
+                // It is possible that there are multiple tiers with the same name so return the last one in the array -
+                // `tiersService.api.browse` returns all tiers, but without any ordering applied, so we assume that
+                // the last one in the array is the most recently created
+                return tiers.data.pop();
+            }
 
-    // Check whether all imports in last 30 days > threshold
-    await verificationTrigger.testImportThreshold();
+            return null;
+        },
+        sendEmail: ghostMailer.send.bind(ghostMailer),
+        isSet: flag => labsService.isSet(flag),
+        addJob: jobsService.addJob.bind(jobsService),
+        knex: db.knex,
+        urlFor: urlUtils.urlFor.bind(urlUtils),
+        context: {
+            importer: true
+        },
+        stripeAPIService,
+        productRepository: membersApi.productRepository
+    });
+};
 
-    return result;
+const initVerificationTrigger = () => {
+    return new VerificationTrigger({
+        getApiTriggerThreshold: () => _.get(config.get('hostSettings'), 'emailVerification.apiThreshold'),
+        getAdminTriggerThreshold: () => _.get(config.get('hostSettings'), 'emailVerification.adminThreshold'),
+        getImportTriggerThreshold: () => _.get(config.get('hostSettings'), 'emailVerification.importThreshold'),
+        isVerified: () => config.get('hostSettings:emailVerification:verified') === true,
+        isVerificationRequired: () => settingsCache.get('email_verification_required') === true,
+        sendVerificationEmail: async ({subject, message, amountTriggered}) => {
+            const escalationAddress = config.get('hostSettings:emailVerification:escalationAddress');
+            const fromAddress = config.get('user_email');
+
+            if (escalationAddress) {
+                await ghostMailer.send({
+                    subject,
+                    html: tpl(message, {
+                        amountTriggered: amountTriggered,
+                        siteUrl: urlUtils.getSiteUrl()
+                    }),
+                    forceTextContent: true,
+                    from: fromAddress,
+                    to: escalationAddress
+                });
+            }
+        },
+        membersStats,
+        Settings: models.Settings,
+        eventRepository: membersApi.events
+    });
 };
 
 module.exports = {
@@ -103,42 +146,13 @@ module.exports = {
             getMembersApi: () => module.exports.api
         });
 
-        verificationTrigger = new VerificationTrigger({
-            apiTriggerThreshold: _.get(config.get('hostSettings'), 'emailVerification.apiThreshold'),
-            adminTriggerThreshold: _.get(config.get('hostSettings'), 'emailVerification.adminThreshold'),
-            importTriggerThreshold: _.get(config.get('hostSettings'), 'emailVerification.importThreshold'),
-            isVerified: () => config.get('hostSettings:emailVerification:verified') === true,
-            isVerificationRequired: () => settingsCache.get('email_verification_required') === true,
-            sendVerificationEmail: ({subject, message, amountTriggered}) => {
-                const escalationAddress = config.get('hostSettings:emailVerification:escalationAddress');
-                const fromAddress = config.get('user_email');
+        const verificationTrigger = initVerificationTrigger();
+        module.exports.verificationTrigger = verificationTrigger;
 
-                if (escalationAddress) {
-                    ghostMailer.send({
-                        subject,
-                        html: tpl(message, {
-                            amountTriggered: amountTriggered,
-                            siteUrl: urlUtils.getSiteUrl()
-                        }),
-                        forceTextContent: true,
-                        from: fromAddress,
-                        to: escalationAddress
-                    });
-                }
-            },
-            membersStats,
-            Settings: models.Settings,
-            eventRepository: membersApi.events
-        });
-
-        (async () => {
-            try {
-                const collection = await models.SingleUseToken.fetchAll();
-                await collection.invokeThen('destroy');
-            } catch (err) {
-                logging.error(err);
-            }
-        })();
+        const membersCSVImporter = initMembersCSVImporter({stripeAPIService: stripeService.api});
+        module.exports.processImport = async (options) => {
+            return await membersCSVImporter.process({...options, verificationTrigger});
+        };
 
         if (!env?.startsWith('testing')) {
             const membersMigrationJobName = 'members-migrations';
@@ -149,12 +163,15 @@ module.exports = {
                     job: stripeService.migrations.execute.bind(stripeService.migrations)
                 });
 
-                await jobsService.awaitCompletion(membersMigrationJobName);
+                await jobsService.awaitOneOffCompletion(membersMigrationJobName);
             }
         }
 
         // Schedule daily cron job to clean expired comp subs
         memberJobs.scheduleExpiredCompCleanupJob();
+
+        // Schedule daily cron job to clean expired tokens
+        memberJobs.scheduleTokenCleanupJob();
     },
     contentGating: require('./content-gating'),
 
@@ -164,18 +181,12 @@ module.exports = {
         return membersApi;
     },
 
-    get settings() {
-        if (!membersSettings) {
-            membersSettings = createMembersSettingsInstance(membersConfig);
-        }
-        return membersSettings;
-    },
-
     ssr: null,
+    verificationTrigger: null,
 
     stripeConnect: require('./stripe-connect'),
 
-    processImport: processImport,
+    processImport: null,
 
     stats: membersStats,
     export: require('./exporter/query')

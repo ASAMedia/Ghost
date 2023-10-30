@@ -91,8 +91,8 @@ export default class UploadThemeModal extends Component {
             return new UnsupportedMediaTypeError();
         }
 
-        if (file.name.match(/^casper\.zip$/i)) {
-            return {payload: {errors: [{message: 'Sorry, the default Casper theme cannot be overwritten.<br>Please rename your zip file to continue.'}]}};
+        if (file.name.match(/^casper\.zip$/i) || file.name.match(/^source\.zip$/i)) {
+            return {payload: {errors: [{message: 'Sorry, the default theme cannot be overwritten.<br>Please rename your zip file to continue.'}]}};
         }
 
         if (!this._allowOverwrite && this.currentThemeNames.includes(themeName)) {
@@ -129,8 +129,8 @@ export default class UploadThemeModal extends Component {
 
         // Ghost differentiates between errors and fatal errors
         // You can't activate a theme with fatal errors, but with errors.
-        if (theme.errors?.length > 0) {
-            this.validationErrors = theme.errors;
+        if (theme.gscanErrors?.length > 0) {
+            this.validationErrors = theme.gscanErrors;
         }
     }
 
@@ -153,6 +153,7 @@ export default class UploadThemeModal extends Component {
 
             this.fatalValidationErrors = fatalErrors;
             this.validationErrors = normalErrors;
+            this.validationWarnings = errorResponse.payload.errors[0].details.warnings || [];
         }
     }
 

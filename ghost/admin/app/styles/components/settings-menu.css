@@ -45,8 +45,8 @@
 
 .settings-menu-container {
     z-index: 999;
-    height: 100vh;
-    min-width: 380px;
+    height: 100dvh;
+    min-width: 420px;
     overflow-x: visible;
     overflow-y: auto;
     border-left: 1px solid var(--whitegrey-d1);
@@ -76,13 +76,20 @@
     }
 }
 
+@media (max-width: 500px) {
+    .settings-menu-container {
+        width: 100vw;
+        min-width: 100vw;
+    }
+}
+
 .settings-menu-container .settings-menu-pane {
     position: absolute;
     top: 0;
     right: 0;
     bottom: 0;
     width: 100%;
-    max-width: 380px;
+    max-width: 419px;
     overflow: auto;
     background-color: var(--white);
     opacity: 1;
@@ -99,7 +106,14 @@
     top: auto;
     right: auto;
     bottom: auto;
-    height: 100vh;
+    height: 100dvh;
+}
+
+@media (max-width: 500px) {
+    .settings-menu-container .settings-menu-pane {
+        width: 100vw;
+        min-width: 100vw;
+    }
 }
 
 /* Header
@@ -113,7 +127,7 @@
     padding: 36px 24px 24px;
     justify-content: space-between;
     align-items: center;
-    z-index: 1;
+    z-index: 3;
     background: var(--white);
 }
 
@@ -193,7 +207,11 @@
 }
 
 .settings-menu-content {
-    padding: 92px 24px 33px;
+    padding: 92px 0 0;
+}
+
+.gh-post-settings {
+    padding: 0 24px;
 }
 
 @media (max-width: 1024px) {
@@ -262,7 +280,7 @@
 }
 
 .settings-menu-content .nav-list {
-    margin-top: 3rem;
+    margin: 0;
 }
 
 .settings-menu-content .word-count {
@@ -277,28 +295,84 @@
     white-space: nowrap;
 }
 
+.settings-menu-post-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 3.2rem;
+    padding: .4rem 0;
+}
+
+.settings-menu-content .for-checkbox .input-toggle-component {
+    margin-right: .8rem;
+}
+
+.settings-menu-content .for-checkbox {
+    margin: 0;
+    width: initial;
+}
+
+.settings-menu-content .for-checkbox label {
+    margin: 0;
+    padding: 0;
+}
+
+.settings-menu-content .for-checkbox label p {
+    margin: 0;
+    color: var(--black);
+    font-size: 1.3rem;
+    font-weight: 500;
+}
+
+li.nav-list-item .switch {
+    position: relative;
+    display: flex;
+    justify-content: space-between;
+    width: 100% !important;
+    padding: 2rem 2.4rem;
+}
+
+li.nav-list-item .for-switch.x-small label {
+    width: initial;
+    height: initial !important;
+}
+
+.settings-menu-content .gh-toggle-featured {
+    position: relative;
+    width: 34px;
+    height: 20px;
+}
+
 .settings-menu-delete-button {
-    background: transparent;
-    box-shadow: none;
+    margin: 3.2rem 2.4rem 2.4rem;
+}
+
+.settings-menu-delete-button button,
+.settings-menu-delete-button button:hover,
+.settings-menu-delete-button button:active,
+.settings-menu-delete-button button:focus {
+    border: 1px solid var(--red);
+}
+
+.settings-menu-delete-button button span {
+    height: 40px;
+    line-height: 40px;
     color: var(--red);
-    border: none;
 }
 
-.settings-menu-delete-button:hover {
-    box-shadow: none;
-    background: none;
-    color: color-mod(var(--red) lightness(-10%));
-}
-
-.settings-menu-delete-button span {
-    font-size: inherit;
-    padding: 6px 0;
+.settings-menu-delete-button button:hover span {
+    color: var(--red-d1);
 }
 
 .settings-menu-delete-button svg {
     width: 1.6rem;
     height: 1.6rem;
-    margin-right: .8rem;
+    margin: 0 .8rem 2px 0;
+    color: var(--red);
+}
+
+.settings-menu-delete-button button:hover svg {
+    color: var(--red-d1);
 }
 
 .post-setting-custom-excerpt {
@@ -374,6 +448,63 @@
     margin-left: 4px;
 }
 
+.settings-menu-content.keyboard-shortcuts .form-group {
+    margin-bottom: 3em;
+}
+
+.settings-menu-content.keyboard-shortcuts label {
+    padding: 12px 0;
+    border-bottom: 1px solid var(--whitegrey-d1);
+    font-size: 1.2rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.settings-menu-content .gh-shortcut {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--whitegrey-d1);
+}
+
+.settings-menu-content .gh-shortcut .link {
+    color: var(--accent-color);
+}
+
+.settings-menu-content .gh-shortcut .code {
+    font-family: Consolas,Liberation Mono,Menlo,Courier,monospace;
+    font-size: .95em;
+}
+
+.gh-shortcut .gh-keys {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
+}
+
+.gh-shortcut .gh-key {
+    min-width: 28px;
+    height: 28px;
+    background: var(--whitegrey);
+    border-radius: var(--border-radius);
+    padding: 0 6px;
+    text-align: center;
+    font-size: 1.3rem;
+    font-weight: 500;
+    line-height: 28px;
+    cursor: default;
+}
+
+.gh-shortcut .gh-key.mono {
+    font-family: Consolas,Liberation Mono,Menlo,Courier,monospace;
+    font-size: 1.25rem;
+}
+
+.gh-shortcut .gh-key.mono.clear {
+    background: transparent;
+}
 
 /* Background
 /* ---------------------------------------------------------- */

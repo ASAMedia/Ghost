@@ -42,7 +42,7 @@
                                 <p>The name of your site</p>
                             </GhFormGroup>
 
-                            <GhFormGroup @errors={{this.settings.errors}} @hasValidated={{this.settings.hasValidated}} @property="description" @class="description-container">
+                            <GhFormGroup @errors={{this.settings.errors}} @hasValidated={{this.settings.hasValidated}} @property="description" class="description-container">
                                 <GhTextInput
                                     @value={{readonly this.settings.description}}
                                     @input={{action (mut this.settings.description) value="target.value"}}
@@ -50,7 +50,7 @@
                                     data-test-description-input={{true}}
                                 />
                                 <GhErrorMessage @errors={{this.settings.errors}} @property="description"/>
-                                <p>Used in your theme, meta data and search results</p>
+                                <p>A short description, used in your theme, meta data and search results</p>
                             </GhFormGroup>
                         </div>
                         {{/liquid-if}}
@@ -96,7 +96,7 @@
                                     data-test-input="locale"
                                 />
                                 <GhErrorMessage @errors={{this.settings.errors}} @property="locale" />
-                                <p>Default: English (<strong>en</strong>); you can add translation files to your theme for <a href="https://ghost.org/docs/themes/helpers/translate/" target="_blank" rel="noopener noreferrer">any language</a></p>
+                                <p>Default: English (<strong>en</strong>); find out more about <a href="https://ghost.org/docs/faq/translation/" target="_blank" rel="noopener noreferrer">using Ghost in other languages</a></p>
                             </GhFormGroup>
                         </div>
                         {{/liquid-if}}
@@ -419,7 +419,7 @@
                                     A private RSS feed is available at
                                     <a href="{{this.privateRSSUrl}}" target="_blank" rel="noopener noreferrer">{{this.privateRSSUrl}}</a>
                                 </span>
-                                <GhFormGroup @class="no-margin pt2" @errors={{this.settings.errors}} @hasValidated={{this.settings.hasValidated}} @property="password">
+                                <GhFormGroup class="no-margin pt2" @errors={{this.settings.errors}} @hasValidated={{this.settings.hasValidated}} @property="password">
                                     <GhTextInput
                                         @value={{readonly this.settings.password}}
                                         @name="general[password]"

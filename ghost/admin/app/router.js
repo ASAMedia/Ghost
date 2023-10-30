@@ -10,9 +10,9 @@ const Router = EmberRouter.extend({
 // eslint-disable-next-line array-callback-return
 Router.map(function () {
     this.route('home', {path: '/'});
-    this.route('plans.vertretungsplan', {path: '/plans/vertretungsplan/:location/:date'});
+this.route('plans.vertretungsplan', {path: '/plans/vertretungsplan/:location/:date'});
 
-    this.route('files.documents', {path: '/files/documents'});
+this.route('files.documents', {path: '/files/documents'});
     this.route('setup');
     this.route('setup.done', {path: '/setup/done'});
 
@@ -32,49 +32,30 @@ Router.map(function () {
 
     this.route('posts');
     this.route('posts.analytics', {path: '/posts/analytics/:post_id'});
+    this.route('posts.mentions', {path: '/posts/analytics/:post_id/mentions'});
+    this.route('posts.debug', {path: '/posts/analytics/:post_id/debug'});
 
     this.route('pages');
 
-    this.route('editor', function () {
+    this.route('lexical-editor', {path: 'editor'}, function () {
         this.route('new', {path: ':type'});
         this.route('edit', {path: ':type/:post_id'});
     });
-
-    this.route('lexical-editor', function () {
-        this.route('new', {path: ':type'});
-        this.route('edit', {path: ':type/:post_id'});
-    });
-    this.route('lexicalsandbox');
 
     this.route('tags');
     this.route('tag.new', {path: '/tags/new'});
     this.route('tag', {path: '/tags/:tag_slug'});
 
-    this.route('settings');
-    this.route('settings.general', {path: '/settings/general'});
-    this.route('settings.membership', {path: '/settings/members'});
-    this.route('settings.code-injection', {path: '/settings/code-injection'});
-    this.route('settings.history', {path: '/settings/history'});
+    this.route('collections');
+    this.route('collection.new', {path: '/collections/new'});
+    this.route('collection', {path: '/collections/:collection_slug'});
 
-    // redirect from old /settings/members-email to /settings/newsletters
-    this.route('settings.members-email', {path: '/settings/members-email'});
-    this.route('settings.newsletters', {path: '/settings/newsletters'}, function () {
-        this.route('new-newsletter', {path: 'new'});
-        this.route('edit-newsletter', {path: ':newsletter_id'});
+    this.route('settings-x', {path: '/settings'}, function () {
+        this.route('settings-x', {path: '/*sub'});
     });
 
-    this.route('settings.design', {path: '/settings/design'}, function () {
-        this.route('change-theme', function () {
-            this.route('view', {path: ':theme_name'});
-            this.route('install');
-        });
-    });
-    // redirect for old install route used by ghost.org/marketplace
-    this.route('settings.theme-install', {path: '/settings/theme/install'});
-
-    this.route('settings.staff', {path: '/settings/staff'}, function () {
-        this.route('user', {path: ':user_slug'});
-    });
+    // testing websockets
+    this.route('websockets');
 
     this.route('explore', function () {
         // actual Ember route, not rendered in iframe
@@ -88,21 +69,7 @@ Router.map(function () {
         });
     });
 
-    this.route('settings.integrations', {path: '/settings/integrations'}, function () {
-        this.route('new');
-    });
-    this.route('settings.integration', {path: '/settings/integrations/:integration_id'}, function () {
-        this.route('webhooks.new', {path: 'webhooks/new'});
-        this.route('webhooks.edit', {path: 'webhooks/:webhook_id'});
-    });
-    this.route('settings.integrations.slack', {path: '/settings/integrations/slack'});
-    this.route('settings.integrations.amp', {path: '/settings/integrations/amp'});
-    this.route('settings.integrations.firstpromoter', {path: '/settings/integrations/firstpromoter'});
-    this.route('settings.integrations.unsplash', {path: '/settings/integrations/unsplash'});
-    this.route('settings.integrations.zapier', {path: '/settings/integrations/zapier'});
-
-    this.route('settings.navigation', {path: '/settings/navigation'});
-    this.route('settings.labs', {path: '/settings/labs'});
+    this.route('migrate');
 
     this.route('members', function () {
         this.route('import');
@@ -119,6 +86,8 @@ Router.map(function () {
     this.route('error404', {path: '/*path'});
 
     this.route('designsandbox');
+
+    this.route('mentions');
 });
 
 export default Router;

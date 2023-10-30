@@ -1,12 +1,16 @@
 const linkTrackingService = require('../../services/link-tracking');
+const INVALIDATE_ALL_REDIRECTS = '/r/*';
 
 module.exports = {
     docName: 'links',
     browse: {
+        headers: {
+            cacheInvalidate: false
+        },
         options: [
             'filter'
         ],
-        permissions: false,
+        permissions: true,
         async query(frame) {
             const links = await linkTrackingService.service.getLinks(frame.options);
 
@@ -20,6 +24,38 @@ module.exports = {
                     }
                 }
             };
+        }
+    },
+    bulkEdit: {
+        statusCode: 200,
+        headers: {
+            cacheInvalidate: INVALIDATE_ALL_REDIRECTS
+        },
+        options: [
+            'filter'
+        ],
+        data: [
+            'action',
+            'meta'
+        ],
+        validation: {
+            data: {
+                action: {
+                    required: true,
+                    values: ['updateLink']
+                }
+            },
+            options: {
+                filter: {
+                    required: true
+                }
+            }
+        },
+        permissions: {
+            method: 'edit'
+        },
+        async query(frame) {
+            return await linkTrackingService.service.bulkEdit(frame.data.bulk, frame.options);
         }
     }
 };

@@ -2,8 +2,8 @@ import moment from 'moment-timezone';
 import {Resource} from 'ember-could-get-used-to-this';
 import {TrackedArray} from 'tracked-built-ins';
 import {action} from '@ember/object';
+import {didCancel, task} from 'ember-concurrency';
 import {inject as service} from '@ember/service';
-import {task} from 'ember-concurrency';
 import {tracked} from '@glimmer/tracking';
 
 export default class HistoryEventFetcher extends Resource {
@@ -38,8 +38,14 @@ export default class HistoryEventFetcher extends Resource {
             filter += `+${this.args.named.filter}`;
         }
 
-        // Can't get this working with Promise.all, somehow results in an infinite loop
-        await this.loadEventsTask.perform({filter});
+        try {
+            await this.loadEventsTask.perform({filter});
+        } catch (e) {
+            if (!didCancel(e)) {
+                // re-throw the non-cancelation error
+                throw e;
+            }
+        }
     }
 
     @action
@@ -85,11 +91,30 @@ export default class HistoryEventFetcher extends Resource {
                 this.hasReachedEnd = true;
             }
 
-            actions.forEach((a) => {
+            let count = 1;
+
+            actions.reverse().forEach((a, index) => {
+                const nextAction = actions[index + 1] || null;
+
+                // depending on the similarity, add additional properties to be used on the frontend for grouping
+                // skip - used for hiding the event on the frontend
+                // count - the number of similar events which is added to the last item
+                if (nextAction || (!nextAction && actions[index - 1].skip)) {
+                    if (nextAction && a.resource_id === nextAction.resource_id && a.event === nextAction.event) {
+                        a.skip = true;
+                        count += 1;
+                    } else {
+                        if (count > 1) {
+                            a.count = count.toString();
+                            count = 1;
+                        }
+                    }
+                }
+
                 a.context = JSON.parse(a.context);
             });
 
-            this.data.push(...actions);
+            this.data.push(...actions.reverse());
         } catch (e) {
             this.isError = true;
 

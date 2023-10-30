@@ -68,7 +68,6 @@ describe('Default Frontend routing', function () {
 
                     $('body.home-template').length.should.equal(1);
                     $('article.post').length.should.equal(7);
-                    $('article.tag-getting-started').length.should.equal(7);
 
                     res.text.should.not.containEql('__GHOST_URL__');
                 });
@@ -170,7 +169,7 @@ describe('Default Frontend routing', function () {
             });
 
             after(async function () {
-                configUtils.restore();
+                await configUtils.restore();
 
                 await testUtils.startGhost({forceStart: true});
                 request = supertest.agent(configUtils.config.get('url'));

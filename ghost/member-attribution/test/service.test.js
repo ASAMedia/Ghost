@@ -1,7 +1,7 @@
 // Switch these lines once there are useful utils
 // const testUtils = require('./utils');
 require('./utils');
-const MemberAttributionService = require('../lib/service');
+const MemberAttributionService = require('../lib/MemberAttributionService');
 
 describe('MemberAttributionService', function () {
     describe('Constructor', function () {
@@ -12,28 +12,45 @@ describe('MemberAttributionService', function () {
 
     describe('getAttributionFromContext', function () {
         it('returns null if no context is provided', async function () {
-            const service = new MemberAttributionService({});
+            const service = new MemberAttributionService({
+                getTrackingEnabled: () => true
+            });
+            const attribution = await service.getAttributionFromContext();
+
+            should(attribution).be.null();
+        });
+
+        it('returns null if tracking is disabled is provided', async function () {
+            const service = new MemberAttributionService({
+                isTrackingEnabled: false
+            });
             const attribution = await service.getAttributionFromContext();
 
             should(attribution).be.null();
         });
 
         it('returns attribution for importer context', async function () {
-            const service = new MemberAttributionService({});
+            const service = new MemberAttributionService({
+                getTrackingEnabled: () => true
+            });
             const attribution = await service.getAttributionFromContext({importer: true});
 
             should(attribution).containEql({referrerSource: 'Imported', referrerMedium: 'Member Importer'});
         });
 
         it('returns attribution for admin context', async function () {
-            const service = new MemberAttributionService({});
+            const service = new MemberAttributionService({
+                getTrackingEnabled: () => true
+            });
             const attribution = await service.getAttributionFromContext({user: 'abc'});
 
             should(attribution).containEql({referrerSource: 'Created manually', referrerMedium: 'Ghost Admin'});
         });
 
         it('returns attribution for api without integration context', async function () {
-            const service = new MemberAttributionService({});
+            const service = new MemberAttributionService({
+                getTrackingEnabled: () => true
+            });
             const attribution = await service.getAttributionFromContext({
                 api_key: 'abc'
             });
@@ -51,7 +68,8 @@ describe('MemberAttributionService', function () {
                             };
                         }
                     }
-                }
+                },
+                getTrackingEnabled: () => true
             });
             const attribution = await service.getAttributionFromContext({
                 api_key: 'abc',
@@ -77,7 +95,8 @@ describe('MemberAttributionService', function () {
                             }
                         };
                     }
-                }
+                },
+                getTrackingEnabled: () => true
             });
             const model = {
                 id: 'event_id',
@@ -110,7 +129,8 @@ describe('MemberAttributionService', function () {
                             }
                         };
                     }
-                }
+                },
+                getTrackingEnabled: () => true
             });
             const model = {
                 id: 'event_id',
@@ -149,7 +169,8 @@ describe('MemberAttributionService', function () {
                             }
                         };
                     }
-                }
+                },
+                getTrackingEnabled: () => true
             });
             const model = {
                 id: 'event_id',

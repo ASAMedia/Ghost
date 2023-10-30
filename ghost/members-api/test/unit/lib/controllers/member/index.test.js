@@ -1,5 +1,5 @@
 const sinon = require('sinon');
-const MemberController = require('../../../../../lib/controllers/member');
+const MemberController = require('../../../../../lib/controllers/MemberController');
 
 describe('MemberController', function () {
     describe('updateSubscription', function () {
@@ -27,6 +27,24 @@ describe('MemberController', function () {
                 })
             };
 
+            const tier = {
+                id: 'whatever'
+            };
+
+            const price = {
+                id: 'stripe_price_id'
+            };
+
+            const tiersService = {
+                api: {
+                    read: sinon.fake.resolves(tier)
+                }
+            };
+
+            const paymentsService = {
+                getPriceForTierCadence: sinon.fake.resolves(price)
+            };
+
             const productRepository = {
                 get: sinon.fake.resolves({
                     get() {
@@ -38,6 +56,8 @@ describe('MemberController', function () {
             const controller = new MemberController({
                 memberRepository,
                 productRepository,
+                tiersService,
+                paymentsService,
                 StripePrice,
                 tokenService
             });
@@ -45,7 +65,8 @@ describe('MemberController', function () {
             const req = {
                 body: {
                     identity: 'token',
-                    priceId: 'plan_name'
+                    tierId: 'tier_id',
+                    cadence: 'yearly'
                 },
                 params: {
                     id: 'subscription_id'

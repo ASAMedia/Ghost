@@ -5,9 +5,8 @@ const labs = require('../../../../../core/shared/labs');
 
 describe('Members Service - utils', function () {
     describe('formattedMemberResponse', function () {
-        let labsStub;
         beforeEach(function () {
-            labsStub = sinon.stub(labs, 'isSet').returns(true);
+            sinon.stub(labs, 'isSet').returns(true);
         });
 
         afterEach(function () {
@@ -24,7 +23,12 @@ describe('Members Service - utils', function () {
                 subscribed: true,
                 status: 'free',
                 extra: 'property',
-                enable_comment_notifications: true
+                enable_comment_notifications: true,
+                email_suppression: {
+                    suppressed: false,
+                    info: null
+                },
+                created_at: '2020-01-01T00:00:00.000Z'
             });
             should(member1).deepEqual({
                 uuid: 'uuid-1',
@@ -36,7 +40,12 @@ describe('Members Service - utils', function () {
                 subscribed: true,
                 subscriptions: [],
                 paid: false,
-                enable_comment_notifications: true
+                enable_comment_notifications: true,
+                email_suppression: {
+                    suppressed: false,
+                    info: null
+                },
+                created_at: '2020-01-01T00:00:00.000Z'
             });
         });
 
@@ -58,7 +67,8 @@ describe('Members Service - utils', function () {
                     sender_email: 'jamie@example.com',
                     sort_order: 0
                 }],
-                enable_comment_notifications: false
+                enable_comment_notifications: false,
+                created_at: '2020-01-01T00:00:00.000Z'
             });
             should(member1).deepEqual({
                 uuid: 'uuid-1',
@@ -76,7 +86,8 @@ describe('Members Service - utils', function () {
                     description: 'One email daily',
                     sort_order: 0
                 }],
-                enable_comment_notifications: false
+                enable_comment_notifications: false,
+                created_at: '2020-01-01T00:00:00.000Z'
             });
         });
     });

@@ -1,5 +1,5 @@
 const crypto = require('crypto');
-const assert = require('assert');
+const assert = require('assert/strict');
 const nock = require('nock');
 const should = require('should');
 const stripe = require('stripe');
@@ -8,7 +8,8 @@ const {agentProvider, mockManager, fixtureManager, matchers} = require('../../ut
 const models = require('../../../core/server/models');
 const urlService = require('../../../core/server/services/url');
 const urlUtils = require('../../../core/shared/url-utils');
-const {anyEtag, anyObjectId, anyUuid, anyISODateTime, anyISODate, anyString, anyArray, anyLocationFor, anyErrorId, anyObject} = matchers;
+const DomainEvents = require('@tryghost/domain-events');
+const {anyContentVersion, anyEtag, anyObjectId, anyUuid, anyISODateTime, anyString, anyArray, anyObject} = matchers;
 
 let membersAgent;
 let adminAgent;
@@ -43,12 +44,6 @@ async function assertSubscription(subscriptionId, asserts) {
     models.Base.Model.prototype.serialize.call(subscription).should.match(asserts);
 }
 
-async function sleep(ms) {
-    return new Promise((resolve) => {
-        setTimeout(resolve, ms);
-    });
-}
-
 describe('Members API', function () {
     // @todo: Test what happens when a complimentary subscription ends (should create comped -> free event)
     // @todo: Test what happens when a complimentary subscription starts a paid subscription
@@ -64,7 +59,7 @@ describe('Members API', function () {
         nock('https://api.stripe.com')
             .persist()
             .get(/v1\/.*/)
-            .reply((uri, body) => {
+            .reply((uri) => {
                 const [match, resource, id] = uri.match(/\/?v1\/(\w+)\/?(\w+)/) || [null];
 
                 if (!match) {
@@ -100,8 +95,8 @@ describe('Members API', function () {
         nock('https://api.stripe.com')
             .persist()
             .post(/v1\/.*/)
-            .reply((uri, body) => {
-                const [match, resource, id, action] = uri.match(/\/?v1\/(\w+)(?:\/?(\w+)){0,2}/) || [null];
+            .reply((uri) => {
+                const [match, resource] = uri.match(/\/?v1\/(\w+)(?:\/?(\w+)){0,2}/) || [null];
 
                 if (!match) {
                     return [500];
@@ -128,7 +123,7 @@ describe('Members API', function () {
     });
 
     afterEach(function () {
-        nock.cleanAll();
+        mockManager.restore();
     });
 
     // Helper methods to update the customer and subscription
@@ -151,7 +146,6 @@ describe('Members API', function () {
 
         beforeEach(function () {
             mockManager.mockMail();
-            mockManager.mockStripe();
         });
 
         afterEach(function () {
@@ -181,6 +175,7 @@ describe('Members API', function () {
 
             await membersAgent.post('/webhooks/stripe/')
                 .body(webhookPayload)
+                .header('content-type', 'application/json')
                 .header('stripe-signature', webhookSignature)
                 .expectStatus(200);
         });
@@ -198,7 +193,6 @@ describe('Members API', function () {
 
         beforeEach(function () {
             mockManager.mockMail();
-            mockManager.mockStripe();
         });
 
         afterEach(function () {
@@ -298,7 +292,7 @@ describe('Members API', function () {
                 status: 'canceled'
             });
 
-            // Send the webhook call to anounce the cancelation
+            // Send the webhook call to announce the cancelation
             const webhookPayload = JSON.stringify({
                 type: 'customer.subscription.updated',
                 data: {
@@ -312,6 +306,7 @@ describe('Members API', function () {
 
             await membersAgent.post('/webhooks/stripe/')
                 .body(webhookPayload)
+                .header('content-type', 'application/json')
                 .header('stripe-signature', webhookSignature)
                 .expectStatus(200);
 
@@ -507,7 +502,7 @@ describe('Members API', function () {
                 status: 'canceled'
             });
 
-            // Send the webhook call to anounce the cancelation
+            // Send the webhook call to announce the cancelation
             const webhookPayload = JSON.stringify({
                 type: 'customer.subscription.updated',
                 data: {
@@ -521,6 +516,7 @@ describe('Members API', function () {
 
             await membersAgent.post('/webhooks/stripe/')
                 .body(webhookPayload)
+                .header('content-type', 'application/json')
                 .header('stripe-signature', webhookSignature)
                 .expectStatus(200);
 
@@ -612,7 +608,6 @@ describe('Members API', function () {
 
         beforeEach(function () {
             mockManager.mockMail();
-            mockManager.mockStripe();
         });
 
         afterEach(function () {
@@ -654,6 +649,7 @@ describe('Members API', function () {
 
             await membersAgent.post('/webhooks/stripe/')
                 .body(webhookPayload)
+                .header('content-type', 'application/json')
                 .header('stripe-signature', webhookSignature);
 
             const {body} = await adminAgent.get('/members/?search=checkout-webhook-test@email.com');
@@ -709,7 +705,7 @@ describe('Members API', function () {
             });
 
             // Wait for the dispatched events (because this happens async)
-            await sleep(250);
+            await DomainEvents.allSettled();
 
             mockManager.assert.sentEmail({
                 subject: '💸 Paid subscription started: checkout-webhook-test@email.com',
@@ -752,6 +748,7 @@ describe('Members API', function () {
 
             await membersAgent.post('/webhooks/stripe/')
                 .body(webhookPayload)
+                .header('content-type', 'application/json')
                 .header('stripe-signature', webhookSignature);
 
             const {body} = await adminAgent.get('/members/?search=checkout-newsletter-default-test@email.com');
@@ -800,6 +797,7 @@ describe('Members API', function () {
 
             await membersAgent.post('/webhooks/stripe/')
                 .body(webhookPayload)
+                .header('content-type', 'application/json')
                 .header('stripe-signature', webhookSignature);
 
             const {body} = await adminAgent.get('/members/?search=checkout-newsletter-test@email.com');
@@ -870,6 +868,7 @@ describe('Members API', function () {
 
             await membersAgent.post('/webhooks/stripe/')
                 .body(webhookPayload)
+                .header('content-type', 'application/json')
                 .header('stripe-signature', webhookSignature)
                 .expectStatus(200);
         });
@@ -924,7 +923,6 @@ describe('Members API', function () {
 
         beforeEach(function () {
             mockManager.mockMail();
-            mockManager.mockStripe();
         });
 
         afterEach(function () {
@@ -998,6 +996,7 @@ describe('Members API', function () {
 
             await membersAgent.post('/webhooks/stripe/')
                 .body(webhookPayload)
+                .header('content-type', 'application/json')
                 .header('stripe-signature', webhookSignature)
                 .expectStatus(200);
 
@@ -1044,7 +1043,7 @@ describe('Members API', function () {
                 status: 'canceled'
             });
 
-            // Send the webhook call to anounce the cancelation
+            // Send the webhook call to announce the cancelation
             webhookPayload = JSON.stringify({
                 type: 'customer.subscription.updated',
                 data: {
@@ -1059,6 +1058,7 @@ describe('Members API', function () {
 
             await membersAgent.post('/webhooks/stripe/')
                 .body(webhookPayload)
+                .header('content-type', 'application/json')
                 .header('stripe-signature', webhookSignature)
                 .expectStatus(200);
 
@@ -1395,6 +1395,7 @@ describe('Members API', function () {
 
             await membersAgent.post('/webhooks/stripe/')
                 .body(webhookPayload)
+                .header('content-type', 'application/json')
                 .header('stripe-signature', webhookSignature);
 
             const {body} = await adminAgent.get(`/members/?search=${customer_id}@email.com`);
@@ -1438,7 +1439,7 @@ describe('Members API', function () {
                 discount
             });
 
-            // Send the webhook call to anounce the cancelation
+            // Send the webhook call to announce the cancelation
             webhookPayload = JSON.stringify({
                 type: 'customer.subscription.updated',
                 data: {
@@ -1453,6 +1454,7 @@ describe('Members API', function () {
 
             await membersAgent.post('/webhooks/stripe/')
                 .body(webhookPayload)
+                .header('content-type', 'application/json')
                 .header('stripe-signature', webhookSignature)
                 .expectStatus(200);
 
@@ -1591,6 +1593,7 @@ describe('Members API', function () {
 
             await membersAgent.post('/webhooks/stripe/')
                 .body(webhookPayload)
+                .header('content-type', 'application/json')
                 .header('stripe-signature', webhookSignature);
 
             const {body} = await adminAgent.get(`/members/?search=${customer_id}@email.com`);
@@ -1642,9 +1645,7 @@ describe('Members API', function () {
         });
 
         beforeEach(function () {
-            mockManager.mockLabsEnabled('memberAttribution');
             mockManager.mockMail();
-            mockManager.mockStripe();
         });
 
         afterEach(function () {
@@ -1675,6 +1676,7 @@ describe('Members API', function () {
                 .get(`/members/events/?filter=type:subscription_event`)
                 .expectStatus(200)
                 .matchHeaderSnapshot({
+                    'content-version': anyContentVersion,
                     etag: anyEtag
                 })
                 .matchBodySnapshot({
@@ -1753,6 +1755,7 @@ describe('Members API', function () {
 
             await membersAgent.post('/webhooks/stripe/')
                 .body(webhookPayload)
+                .header('content-type', 'application/json')
                 .header('stripe-signature', webhookSignature)
                 .expectStatus(200);
 
@@ -1810,6 +1813,7 @@ describe('Members API', function () {
                     members: new Array(1).fill(memberMatcherShallowIncludes)
                 })
                 .matchHeaderSnapshot({
+                    'content-version': anyContentVersion,
                     etag: anyEtag
                 })
                 .expect(({body: body3}) => {
@@ -1961,7 +1965,7 @@ describe('Members API', function () {
             await testWithAttribution(attribution, {
                 id: null,
                 url: null,
-                type: 'url',
+                type: null,
                 title: null,
                 referrer_source: null,
                 referrer_medium: null,
@@ -1975,7 +1979,7 @@ describe('Members API', function () {
             await testWithAttribution(attribution, {
                 id: null,
                 url: null,
-                type: 'url',
+                type: null,
                 title: null,
                 referrer_source: null,
                 referrer_medium: null,
@@ -1991,11 +1995,11 @@ describe('Members API', function () {
                 .get(`/members/events/?filter=type:subscription_event`)
                 .expectStatus(200)
                 .matchHeaderSnapshot({
+                    'content-version': anyContentVersion,
                     etag: anyEtag
                 })
                 .matchBodySnapshot({
                     events: new Array(subscriptionAttributions.length).fill({
-                        type: anyString,
                         data: anyObject
                     })
                 })

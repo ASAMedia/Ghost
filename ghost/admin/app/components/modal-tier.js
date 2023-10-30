@@ -2,9 +2,11 @@ import ModalBase from 'ghost-admin/components/modal-base';
 import TierBenefitItem from '../models/tier-benefit-item';
 import classic from 'ember-classic-decorator';
 import {action} from '@ember/object';
-import {currencies, getCurrencyOptions, getSymbol} from 'ghost-admin/utils/currency';
+import {currencies, getCurrencyOptions, getSymbol, minimumAmountForCurrency} from 'ghost-admin/utils/currency';
 import {A as emberA} from '@ember/array';
 import {htmlSafe} from '@ember/template';
+import {inject} from 'ghost-admin/decorators/inject';
+import {run} from '@ember/runloop';
 import {inject as service} from '@ember/service';
 import {task} from 'ember-concurrency';
 import {tracked} from '@glimmer/tracking';
@@ -17,12 +19,19 @@ const CURRENCIES = currencies.map((currency) => {
     };
 });
 
+// Stripe has an upper amount limit of 999,999.99
+// See https://stripe.com/docs/api/payment_intents/object#payment_intent_object-amount
+const MAX_AMOUNT = 999_999.99;
+
 // TODO: update modals to work fully with Glimmer components
 @classic
 export default class ModalTierPrice extends ModalBase {
     @service feature;
     @service settings;
-    @service config;
+    @service membersUtils;
+
+    @inject config;
+
     @tracked model;
     @tracked tier;
     @tracked periodVal;
@@ -61,7 +70,7 @@ export default class ModalTierPrice extends ModalBase {
     }
 
     get isFreeTrialEnabled() {
-        return this.feature.get('freeTrial') && this.freeTrialEnabled && this.tier.get('trialDays') > 0;
+        return this.freeTrialEnabled && this.tier.get('trialDays') > 0;
     }
 
     init() {
@@ -185,6 +194,9 @@ export default class ModalTierPrice extends ModalBase {
             this.hasSaved = true;
             yield this.confirm();
             this.send('closeModal');
+
+            // Reload in the background (no await here)
+            this.membersUtils.reload();
         } catch (error) {
             if (error === undefined) {
                 // Validation error
@@ -202,8 +214,14 @@ export default class ModalTierPrice extends ModalBase {
             const yearlyAmount = this.stripeYearlyAmount;
             const monthlyAmount = this.stripeMonthlyAmount;
             const symbol = getSymbol(this.currency);
-            if (!yearlyAmount || yearlyAmount < 1 || !monthlyAmount || monthlyAmount < 1) {
-                throw new TypeError(`Subscription amount must be at least ${symbol}1.00`);
+            const minimumAmount = minimumAmountForCurrency(this.currency);
+
+            if (!yearlyAmount || (yearlyAmount < minimumAmount) || !monthlyAmount || (monthlyAmount < minimumAmount)) {
+                throw new TypeError(`Subscription amount cannot be less than ${symbol}${minimumAmount}`);
+            }
+
+            if (yearlyAmount > MAX_AMOUNT || monthlyAmount > MAX_AMOUNT) {
+                throw new TypeError(`Subscription amount cannot be more than ${symbol}${MAX_AMOUNT}`);
             }
         } catch (err) {
             this.stripePlanError = err.message;
@@ -250,8 +268,14 @@ export default class ModalTierPrice extends ModalBase {
             const yearlyAmount = this.stripeYearlyAmount;
             const monthlyAmount = this.stripeMonthlyAmount;
             const symbol = getSymbol(this.currency);
-            if (!yearlyAmount || yearlyAmount < 1 || !monthlyAmount || monthlyAmount < 1) {
-                throw new TypeError(`Subscription amount must be at least ${symbol}1.00`);
+            const minimumAmount = minimumAmountForCurrency(this.currency);
+
+            if (!yearlyAmount || (yearlyAmount < minimumAmount) || !monthlyAmount || (monthlyAmount < minimumAmount)) {
+                throw new TypeError(`Subscription amount cannot be less than ${symbol}${minimumAmount}`);
+            }
+
+            if (yearlyAmount > MAX_AMOUNT || monthlyAmount > MAX_AMOUNT) {
+                throw new TypeError(`Subscription amount cannot be more than ${symbol}${MAX_AMOUNT}`);
             }
         } catch (err) {
             this.stripePlanError = err.message;
@@ -301,4 +325,12 @@ export default class ModalTierPrice extends ModalBase {
             this.close();
         }
     };
+
+    keyPress(event) {
+        // enter key
+        if (event.keyCode === 13) {
+            event.preventDefault();
+            run.scheduleOnce('actions', this, this.send, 'addBenefit', this.newBenefit);
+        }
+    }
 }

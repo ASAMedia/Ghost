@@ -1,15 +1,10 @@
 const {agentProvider, mockManager, fixtureManager, matchers} = require('../../utils/e2e-framework');
 const should = require('should');
 const settingsCache = require('../../../core/shared/settings-cache');
+const DomainEvents = require('@tryghost/domain-events');
 const {anyErrorId} = matchers;
 
 let membersAgent, membersService;
-
-async function sleep(ms) {
-    return new Promise((resolve) => {
-        setTimeout(resolve, ms);
-    });
-}
 
 describe('sendMagicLink', function () {
     before(async function () {
@@ -203,7 +198,7 @@ describe('sendMagicLink', function () {
         const data = await membersService.api.getMemberDataFromMagicLinkToken(token);
 
         // Wait for the dispatched events (because this happens async)
-        await sleep(250);
+        await DomainEvents.allSettled();
         // Check member alert is sent to site owners
         mockManager.assert.sentEmail({
             to: 'jbloggs@example.com',

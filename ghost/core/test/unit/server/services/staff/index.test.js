@@ -1,18 +1,12 @@
 const sinon = require('sinon');
-
 const staffService = require('../../../../../core/server/services/staff');
 
 const DomainEvents = require('@tryghost/domain-events');
 const {mockManager} = require('../../../../utils/e2e-framework');
 const models = require('../../../../../core/server/models');
 
-const {SubscriptionCreatedEvent, SubscriptionCancelledEvent, MemberCreatedEvent} = require('@tryghost/member-events');
-
-async function sleep(ms) {
-    return new Promise((resolve) => {
-        setTimeout(resolve, ms);
-    });
-}
+const {SubscriptionCancelledEvent, MemberCreatedEvent, SubscriptionActivatedEvent} = require('@tryghost/member-events');
+const {MilestoneCreatedEvent} = require('@tryghost/milestones');
 
 describe('Staff Service:', function () {
     before(function () {
@@ -21,6 +15,9 @@ describe('Staff Service:', function () {
 
     beforeEach(function () {
         mockManager.mockMail();
+        mockManager.mockSlack();
+        mockManager.mockSetting('title', 'The Weekly Roundup');
+
         sinon.stub(models.User, 'getEmailAlertUsers').resolves([{
             email: 'owner@ghost.org',
             slug: 'ghost'
@@ -87,7 +84,7 @@ describe('Staff Service:', function () {
             }));
 
             // Wait for the dispatched events (because this happens async)
-            await sleep(250);
+            await DomainEvents.allSettled();
             mockManager.assert.sentEmail({
                 to: 'owner@ghost.org',
                 subject: /🥳 Free member signup: Jamie/
@@ -103,7 +100,7 @@ describe('Staff Service:', function () {
             }));
 
             // Wait for the dispatched events (because this happens async)
-            await sleep(250);
+            await DomainEvents.allSettled();
             mockManager.assert.sentEmail({
                 to: 'owner@ghost.org',
                 subject: /🥳 Free member signup: Jamie/
@@ -119,7 +116,7 @@ describe('Staff Service:', function () {
             }));
 
             // Wait for the dispatched events (because this happens async)
-            await sleep(250);
+            await DomainEvents.allSettled();
             mockManager.assert.sentEmailCount(0);
         });
     });
@@ -138,13 +135,13 @@ describe('Staff Service:', function () {
 
         it('sends email for member source', async function () {
             await staffService.init();
-            DomainEvents.dispatch(SubscriptionCreatedEvent.create({
+            DomainEvents.dispatch(SubscriptionActivatedEvent.create({
                 source: 'member',
                 ...eventData
             }));
 
             // Wait for the dispatched events (because this happens async)
-            await sleep(250);
+            await DomainEvents.allSettled();
             mockManager.assert.sentEmail({
                 to: 'owner@ghost.org',
                 subject: /💸 Paid subscription started: Jamie/
@@ -154,13 +151,13 @@ describe('Staff Service:', function () {
 
         it('sends email for api source', async function () {
             await staffService.init();
-            DomainEvents.dispatch(SubscriptionCreatedEvent.create({
+            DomainEvents.dispatch(SubscriptionActivatedEvent.create({
                 source: 'api',
                 ...eventData
             }));
 
             // Wait for the dispatched events (because this happens async)
-            await sleep(250);
+            await DomainEvents.allSettled();
             mockManager.assert.sentEmail({
                 to: 'owner@ghost.org',
                 subject: /💸 Paid subscription started: Jamie/
@@ -170,13 +167,13 @@ describe('Staff Service:', function () {
 
         it('does not send email for importer source', async function () {
             await staffService.init();
-            DomainEvents.dispatch(SubscriptionCreatedEvent.create({
+            DomainEvents.dispatch(SubscriptionActivatedEvent.create({
                 source: 'import',
                 ...eventData
             }));
 
             // Wait for the dispatched events (because this happens async)
-            await sleep(250);
+            await DomainEvents.allSettled();
             mockManager.assert.sentEmailCount(0);
         });
     });
@@ -196,7 +193,7 @@ describe('Staff Service:', function () {
             }, new Date()));
 
             // Wait for the dispatched events (because this happens async)
-            await sleep(250);
+            await DomainEvents.allSettled();
             mockManager.assert.sentEmail({
                 to: 'owner@ghost.org',
                 subject: /⚠️ Cancellation: Jamie/
@@ -212,7 +209,7 @@ describe('Staff Service:', function () {
             }));
 
             // Wait for the dispatched events (because this happens async)
-            await sleep(250);
+            await DomainEvents.allSettled();
             mockManager.assert.sentEmail({
                 to: 'owner@ghost.org',
                 subject: /⚠️ Cancellation: Jamie/
@@ -228,7 +225,72 @@ describe('Staff Service:', function () {
             }));
 
             // Wait for the dispatched events (because this happens async)
-            await sleep(250);
+            await DomainEvents.allSettled();
+            mockManager.assert.sentEmailCount(0);
+        });
+    });
+
+    describe('milestone created event:', function () {
+        it('sends email for achieved milestone', async function () {
+            await staffService.init();
+            DomainEvents.dispatch(MilestoneCreatedEvent.create({
+                milestone: {
+                    type: 'arr',
+                    currency: 'usd',
+                    value: 1000,
+                    createdAt: new Date(),
+                    emailSentAt: new Date()
+                },
+                meta: {
+                    currentValue: 105
+                }
+            }));
+
+            // Wait for the dispatched events (because this happens async)
+            await DomainEvents.allSettled();
+
+            mockManager.assert.sentEmailCount(1);
+
+            mockManager.assert.sentEmail({
+                to: 'owner@ghost.org',
+                subject: /The Weekly Roundup hit \$1,000 ARR/
+            });
+        });
+
+        it('does not send email when no email created at provided or a reason is set', async function () {
+            DomainEvents.dispatch(MilestoneCreatedEvent.create({
+                milestone: {
+                    type: 'arr',
+                    currency: 'usd',
+                    value: 1000,
+                    createdAt: new Date(),
+                    emailSentAt: null
+                },
+                meta: {
+                    currentValue: 105
+                }
+            }));
+
+            // Wait for the dispatched events (because this happens async)
+            await DomainEvents.allSettled();
+
+            DomainEvents.dispatch(MilestoneCreatedEvent.create({
+                milestone: {
+                    type: 'arr',
+                    currency: 'usd',
+                    value: 1000,
+                    createdAt: new Date(),
+                    emailSentAt: new Date(),
+                    meta: {
+                        currentValue: 105,
+                        reason: 'import'
+                    }
+                }
+            }));
+
+            // Wait for the dispatched events (because this happens async)
+            await DomainEvents.allSettled();
+
             mockManager.assert.sentEmailCount(0);
         });
     });

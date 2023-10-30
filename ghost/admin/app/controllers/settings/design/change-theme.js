@@ -13,18 +13,17 @@ export default class ChangeThemeController extends Controller {
     themes = this.store.peekAll('theme');
 
     officialThemes = [{
+        name: 'Source',
+        category: 'News',
+        previewUrl: 'https://source.ghost.io/',
+        ref: 'default',
+        image: 'assets/img/themes/Source.png'
+    }, {
         name: 'Casper',
         category: 'Blog',
         previewUrl: 'https://demo.ghost.io/',
-        ref: 'default',
-        image: 'assets/img/themes/Casper.jpg'
-    }, {
-        name: 'Headline',
-        category: 'News',
-        url: 'https://github.com/TryGhost/Headline',
-        previewUrl: 'https://headline.ghost.io',
-        ref: 'TryGhost/Headline',
-        image: 'assets/img/themes/Headline.jpg'
+        ref: 'TryGhost/Casper',
+        image: 'assets/img/themes/Casper.png'
     }, {
         name: 'Edition',
         category: 'Newsletter',
@@ -39,6 +38,20 @@ export default class ChangeThemeController extends Controller {
         previewUrl: 'https://solo.ghost.io',
         ref: 'TryGhost/Solo',
         image: 'assets/img/themes/Solo.png'
+    }, {
+        name: 'Taste',
+        category: 'Blog',
+        url: 'https://github.com/TryGhost/Taste',
+        previewUrl: 'https://taste.ghost.io',
+        ref: 'TryGhost/Taste',
+        image: 'assets/img/themes/Taste.png'
+    }, {
+        name: 'Episode',
+        category: 'Podcast',
+        url: 'https://github.com/TryGhost/Episode',
+        previewUrl: 'https://episode.ghost.io',
+        ref: 'TryGhost/Episode',
+        image: 'assets/img/themes/Episode.png'
     }, {
         name: 'Digest',
         category: 'Newsletter',
@@ -96,6 +109,13 @@ export default class ChangeThemeController extends Controller {
         ref: 'TryGhost/Ease',
         image: 'assets/img/themes/Ease.png'
     }, {
+        name: 'Headline',
+        category: 'News',
+        url: 'https://github.com/TryGhost/Headline',
+        previewUrl: 'https://headline.ghost.io',
+        ref: 'TryGhost/Headline',
+        image: 'assets/img/themes/Headline.png'
+    }, {
         name: 'Ruby',
         category: 'Magazine',
         url: 'https://github.com/TryGhost/Ruby',
@@ -108,7 +128,7 @@ export default class ChangeThemeController extends Controller {
         url: 'https://github.com/TryGhost/London',
         previewUrl: 'https://london.ghost.io',
         ref: 'TryGhost/London',
-        image: 'assets/img/themes/London.jpg'
+        image: 'assets/img/themes/London.png'
     }, {
         name: 'Journal',
         category: 'Newsletter',
@@ -129,7 +149,8 @@ export default class ChangeThemeController extends Controller {
                 decoratedTheme.isDefault = true;
             }
 
-            if (theme.name.toLowerCase() === activeTheme.name) {
+            if (typeof activeTheme !== 'undefined'
+                && theme.name.toLowerCase() === activeTheme.name) {
                 decoratedTheme.isActive = true;
             }
 

@@ -2,6 +2,11 @@
 const path = require('path');
 
 /**
+ * @TODO: pass these in as dependencies
+ */
+const {PostRevisions} = require('@tryghost/post-revisions');
+
+/**
  * @typedef {Object} IdbBackup
  * @prop {() => Promise<string>} backup
  */
@@ -149,6 +154,14 @@ class Users {
 
         return this.models.Base.transaction(async (t) => {
             frameOptions.transacting = t;
+
+            const postRevisions = new PostRevisions({
+                model: this.models.PostRevision
+            });
+
+            await postRevisions.removeAuthorFromRevisions(frameOptions.id, {
+                transacting: frameOptions.transacting
+            });
 
             await this.assignTagToUserPosts({
                 id: frameOptions.id,

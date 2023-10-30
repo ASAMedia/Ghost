@@ -36,7 +36,8 @@ const Redirect = ghostBookshelf.Model.extend({
     permittedOptions(methodName) {
         let options = ghostBookshelf.Model.permittedOptions.call(this, methodName);
         const validOptions = {
-            findAll: ['filter', 'columns', 'withRelated']
+            findAll: ['filter', 'columns', 'withRelated'],
+            edit: ['importing']
         };
 
         if (validOptions[methodName]) {
@@ -53,6 +54,7 @@ const Redirect = ghostBookshelf.Model.extend({
                     qb.countDistinct('members_click_events.member_id')
                         .from('members_click_events')
                         .whereRaw('redirects.id = members_click_events.redirect_id')
+                        .whereRaw('redirects.updated_at <= members_click_events.created_at')
                         .as('count__clicks');
                 });
             }

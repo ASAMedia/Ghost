@@ -3,12 +3,12 @@ import ModalComponent from 'ghost-admin/components/modal-base';
 import copyTextToClipboard from 'ghost-admin/utils/copy-text-to-clipboard';
 import {action, computed} from '@ember/object';
 import {htmlSafe} from '@ember/template';
+import {inject} from 'ghost-admin/decorators/inject';
 import {inject as service} from '@ember/service';
 import {task, timeout} from 'ember-concurrency';
 const ICON_EXTENSIONS = ['gif', 'jpg', 'jpeg', 'png', 'svg'];
 
 export default ModalComponent.extend({
-    config: service(),
     modals: service(),
     membersUtils: service(),
     settings: service(),
@@ -28,8 +28,12 @@ export default ModalComponent.extend({
     changedTiers: null,
     openSection: null,
     portalPreviewGuid: 'modal-portal-settings',
+    closeOnEnter: false,
+    maxTermsLength: 115,
 
     confirm() {},
+
+    config: inject(),
 
     backgroundStyle: computed('settings.accentColor', function () {
         let color = this.settings.accentColor || '#ffffff';
@@ -43,7 +47,7 @@ export default ModalComponent.extend({
         return `data-portal`;
     }),
 
-    portalPreviewUrl: computed('page', 'model.tiers.[]', 'changedTiers.[]', 'membersUtils.{isFreeChecked,isMonthlyChecked,isYearlyChecked}', 'settings.{portalName,portalButton,portalButtonIcon,portalButtonSignupText,portalButtonStyle,accentColor,portalPlans.[]}', function () {
+    portalPreviewUrl: computed('page', 'model.tiers.[]', 'changedTiers.[]', 'membersUtils.{isFreeChecked,isMonthlyChecked,isYearlyChecked}', 'settings.{portalName,portalButton,portalButtonIcon,portalButtonSignupText,portalSignupTermsHtml,portalSignupCheckboxRequired,portalButtonStyle,accentColor,portalPlans.[]}', function () {
         const options = this.getProperties(['page']);
         options.portalTiers = this.model.tiers?.filter((tier) => {
             return tier.get('visibility') === 'public'
@@ -109,6 +113,10 @@ export default ModalComponent.extend({
         });
 
         return !!visibleTiers?.length;
+    }),
+
+    setTermsHtml: action((event) => {
+        this.settings.portalSignupTermsHtml = event.target.value;
     }),
 
     init() {
@@ -257,6 +265,30 @@ export default ModalComponent.extend({
             } else {
                 this.settings.membersSupportAddress = supportAddress;
             }
+        },
+
+        toggleSignupCheckboxRequired(checked) {
+            this.settings.portalSignupCheckboxRequired = checked;
+        },
+
+        validateTermsHtml() {
+            let content = this.settings.portalSignupTermsHtml ?? '';
+
+            // Strip HTML-tags and characters from content so we have a reliable character count
+            content = content.replace(/<[^>]*>?/gm, '');
+            content = content.replace(/&nbsp;/g, ' ');
+            content = content.replace(/&amp;/g, '&');
+            content = content.replace(/&quot;/g, '"');
+            content = content.replace(/&lt;/g, '<');
+            content = content.replace(/&gt;/g, '>');
+
+            this.settings.errors.remove('portalSignupTermsHtml');
+            this.settings.hasValidated.removeObject('portalSignupTermsHtml');
+
+            if (content.length > this.maxTermsLength) {
+                this.settings.errors.add('portalSignupTermsHtml', 'Signup notice is too long');
+                this.settings.hasValidated.pushObject('portalSignupTermsHtml');
+            }
         }
     },
 
@@ -356,6 +388,7 @@ export default ModalComponent.extend({
     saveTask: task(function* () {
         this.send('validateFreeSignupRedirect');
         this.send('validatePaidSignupRedirect');
+        this.send('validateTermsHtml');
 
         this.settings.errors.remove('members_support_address');
         this.settings.hasValidated.removeObject('members_support_address');

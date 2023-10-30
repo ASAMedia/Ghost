@@ -1,4 +1,4 @@
-const assert = require('assert');
+const assert = require('assert/strict');
 const {agentProvider, mockManager, fixtureManager, matchers, configUtils} = require('../../utils/e2e-framework');
 const {anyEtag, anyObjectId, anyLocationFor, anyErrorId} = matchers;
 const models = require('../../../core/server/models');
@@ -10,7 +10,7 @@ describe('Members Feedback', function () {
 
     before(async function () {
         membersAgent = await agentProvider.getMembersAPIAgent();
-        membersAgent2 = await agentProvider.getMembersAPIAgent();
+        membersAgent2 = membersAgent.duplicate();
 
         await fixtureManager.init('posts', 'members');
         memberUuid = fixtureManager.get('members', 0).uuid;
@@ -20,10 +20,10 @@ describe('Members Feedback', function () {
         mockManager.mockMail();
     });
 
-    afterEach(function () {
+    afterEach(async function () {
         clock?.restore();
         clock = undefined;
-        configUtils.restore();
+        await configUtils.restore();
         mockManager.restore();
     });
 
@@ -273,7 +273,7 @@ describe('Members Feedback', function () {
                     }
                 ]
             });
-        
+
         const model3 = await models.MemberFeedback.findOne({id: feedbackId}, {require: true});
         assert.equal(body3.feedback[0].id, feedbackId);
         assert.equal(body3.feedback[0].score, 1);
