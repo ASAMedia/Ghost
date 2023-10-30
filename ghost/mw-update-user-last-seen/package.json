@@ -1,7 +1,7 @@
 {
   "name": "@tryghost/mw-update-user-last-seen",
   "private": true,
-  "version": "0.0.0",
+  "version": "5.71.0",
   "author": "Ghost Foundation",
   "license": "MIT",
   "main": "index.js",

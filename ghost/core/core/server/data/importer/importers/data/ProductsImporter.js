@@ -1,5 +1,5 @@
 const _ = require('lodash');
-const BaseImporter = require('./Base');
+const BaseImporter = require('./base');
 const models = require('../../../../models');
 const debug = require('@tryghost/debug')('importer:products');
 

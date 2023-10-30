@@ -1,5 +1,5 @@
 const debug = require('@tryghost/debug')('importer:roles');
-const BaseImporter = require('./Base');
+const BaseImporter = require('./base');
 
 class RolesImporter extends BaseImporter {
     constructor(allDataFromFile) {

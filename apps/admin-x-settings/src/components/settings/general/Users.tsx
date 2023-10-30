@@ -214,6 +214,10 @@ const Users: React.FC<{ keywords: string[], highlight?: boolean }> = ({keywords,
         editorUsers,
         authorUsers,
         contributorUsers,
+        planseditorUsers,
+        planseditoreditorUsers,
+        planseditorauthorUsers,
+        planseditorcontributorUsers,
         invites,
         hasNextPage,
         fetchNextPage
@@ -252,6 +256,26 @@ const Users: React.FC<{ keywords: string[], highlight?: boolean }> = ({keywords,
             id: 'users-contributors',
             title: 'Contributors',
             contents: (<UsersList groupname='contributors' users={contributorUsers} />)
+        },
+        {
+            id: 'users-planseditors',
+            title: 'Planseditor',
+            contents: (<UsersList groupname='planseditors' users={planseditorUsers} />)
+        },
+        {
+            id: 'users-planseditor-editors',
+            title: 'Planseditor Editors',
+            contents: (<UsersList groupname='planseditoreditors' users={planseditoreditorUsers} />)
+        },
+        {
+            id: 'users-planseditor-authors',
+            title: 'Planseditor Authors',
+            contents: (<UsersList groupname='planseditorauthors' users={planseditorauthorUsers} />)
+        },
+        {
+            id: 'users-planseditor-contributors',
+            title: 'Planseditor Contributors',
+            contents: (<UsersList groupname='planseditorcontributors' users={planseditorcontributorUsers} />)
         },
         {
             id: 'users-invited',

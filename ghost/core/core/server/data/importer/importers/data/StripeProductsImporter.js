@@ -1,6 +1,6 @@
 const _ = require('lodash');
 const debug = require('@tryghost/debug')('importer:stripeproducts');
-const BaseImporter = require('./Base');
+const BaseImporter = require('./base');
 const models = require('../../../../models');
 
 class StripeProductsImporter extends BaseImporter {

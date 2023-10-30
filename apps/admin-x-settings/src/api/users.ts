@@ -152,16 +152,36 @@ export function isAdminUser(user: User) {
     return user.roles.some(role => role.name === 'Administrator');
 }
 
+export function isPlanseditorOnlyUser(user: User) {
+    return user.roles.some(role => role.name === 'Planseditor');
+}
+
+export function isPlanseditorContributorUser(user: User) {
+    return user.roles.some(role => role.name === 'Planseditor Contributor');
+}
+
+export function isPlanseditorAuthorUser(user: User) {
+    return user.roles.some(role => role.name === 'Planseditor Author');
+}
+
+export function isPlanseditorEditorUser(user: User) {
+    return user.roles.some(role => role.name === 'Planseditor Editor');
+}
+
+export function isPlanseditorUser(user: User) {
+    return isPlanseditorOnlyUser(user) || isPlanseditorContributorUser(user) || isPlanseditorAuthorUser(user) || isPlanseditorEditorUser(user);
+}
+
 export function isEditorUser(user: User) {
-    return user.roles.some(role => role.name === 'Editor');
+    return user.roles.some(role => role.name === 'Editor') || isPlanseditorEditorUser(user);
 }
 
 export function isAuthorUser(user: User) {
-    return user.roles.some(role => role.name === 'Author');
+    return user.roles.some(role => role.name === 'Author') || isPlanseditorAuthorUser(user);
 }
 
 export function isContributorUser(user: User) {
-    return user.roles.some(role => role.name === 'Contributor');
+    return user.roles.some(role => role.name === 'Contributor') || isPlanseditorContributorUser(user);
 }
 
 export function isAuthorOrContributor(user: User) {
@@ -174,4 +194,9 @@ export function canAccessSettings(user: User) {
 
 export function hasAdminAccess(user: User) {
     return isOwnerUser(user) || isAdminUser(user);
+}
+
+//Added Support for PlansEditor
+export function isEditorOrPlanseditor(user: User) {
+    return isAdminUser(user) || isPlanseditorUser(user);
 }

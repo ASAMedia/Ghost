@@ -1,5 +1,5 @@
 const debug = require('@tryghost/debug')('importer:revue-subscriber');
-const BaseImporter = require('./Base');
+const BaseImporter = require('./base');
 
 const papaparse = require('papaparse');
 const path = require('path');
