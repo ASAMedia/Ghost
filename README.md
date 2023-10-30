@@ -3,7 +3,7 @@
   <a href="https://lyonel-feininger-gymnasium.de/" style="float: left">
     <img src="https://lyonel-feininger-gymnasium.de/content/images/2020/12/Schul-LOGO-transparent-rand-2.png" width="100px" alt="Ghost" />
   </a>
-      <a><h1>Custom Ghost environment for the Lyonel-Feininger-Gymnasium Buttelstedt/Mellingen</h1></a>
+      <a><h1>Custom Ghost environment for the Lyonel-Feininger-Gymnasium Mellingen/Berlstedt</h1></a>
 </p>
 
 # Custom Setup Guide

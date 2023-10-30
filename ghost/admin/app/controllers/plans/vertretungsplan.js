@@ -60,14 +60,14 @@ export default Controller.extend({
             var file = new Blob([array], {type: fileFormat.mime});
             var fileURL = URL.createObjectURL(file);
             if (window.navigator && window.navigator.msSaveOrOpenBlob) {
-                window.navigator.msSaveOrOpenBlob(fileURL, (this.vpModel.isMellingen ? `Mellingen-${this.vpModel.date}` : `Buttelstedt-${this.vpModel.date}`));
+                window.navigator.msSaveOrOpenBlob(fileURL, (this.vpModel.isMellingen ? `Mellingen-${this.vpModel.date}` : `Berlstedt-${this.vpModel.date}`));
             } else {
                 var a = document.createElement('a');
                 document.body.appendChild(a);
                 a.style = 'display: none';
                 a.href = fileURL;
                 a.target = '_blank';
-                a.download = (this.vpModel.isMellingen ? `Mellingen-${this.vpModel.date}.${fileFormat.key}` : `Buttelstedt-${this.vpModel.date}.${fileFormat.key}`);
+                a.download = (this.vpModel.isMellingen ? `Mellingen-${this.vpModel.date}.${fileFormat.key}` : `Berlstedt-${this.vpModel.date}.${fileFormat.key}`);
                 a.click();
                 a.remove();
                 window.URL.revokeObjectURL(fileURL);
