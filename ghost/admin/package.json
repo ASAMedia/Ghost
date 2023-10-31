@@ -107,6 +107,8 @@
     "ember-modifier": "4.1.0",
     "ember-moment": "10.0.0",
     "ember-one-way-select": "4.0.1",
+    "ember-power-calendar": "^0.20.2",
+    "ember-power-calendar-moment": "^0.3.0",
     "ember-power-datepicker": "cibernox/ember-power-datepicker",
     "ember-power-select": "6.0.1",
     "ember-resolver": "8.1.0",
@@ -150,9 +152,7 @@
   },
   "ember-addon": {
     "paths": [
-      "lib/asset-delivery",
-      "lib/ember-power-calendar-utils",
-      "lib/ember-power-calendar-moment"
+      "lib/asset-delivery"
     ]
   },
   "resolutions": {
@@ -170,15 +170,15 @@
   },
   "dependencies": {
     "@sentry/integrations": "^7.75.1",
-    "jose": "4.15.4",
-    "path-browserify": "1.0.1",
     "apollo-link": "1.2.14",
     "apollo-link-context": "^1.0.20",
     "ember-apollo-client": "4.1.0",
     "ember-cli-clipboard": "0.9.0",
     "graphql": "^16.6.0",
     "graphql-tag": "2.12.6",
+    "jose": "4.15.4",
     "lodash": "4.17.21",
+    "path-browserify": "1.0.1",
     "rsvp": "4.8.5",
     "webpack": "5.89.0"
   },
