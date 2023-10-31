@@ -9,22 +9,22 @@
         as |dp|
     >
         <dp.Trigger @tabindex="-1" data-test-date-picker-trigger>
-            <div class="{{if this.error "error"}}">
-                <input
-                    type="text"
-                    placeholder={{this.dateFormat}}
-                    value={{moment-format @value this.dateFormat}}
-                    disabled={{@disabled}}
-                    aria-label="Selected date"
-                    class="gh-input gh-datepicker-input"
-                    {{on "input" (fn this.onDateInput dp)}}
-                    {{on "blur" this.onDateBlur}}
-                    {{on "keydown" (fn this.onDateKeydown dp)}}
-                    {{did-update this.resetInputValue @value}}
-                    data-test-date-picker-input
-                />
-                {{svg-jar "calendar" class="gh-date-picker-cal-icon"}}
-            </div>
+              <div class="date-select {{if this.dateError "error"}}"> <span
+                                                class="mx-1 elevation-2 v-chip v-chip--no-color v-chip--pill theme--light v-size--default"
+                                                id="date-select-activator"><span class="v-chip__content">
+                                                    <div class="v-avatar white--text v-avatar--left primary"
+                                                        style="height: 48px; min-width: 48px; width: 48px;">
+                                                        {{readonly this.nameOfDay}}
+                                                    
+                                                    </div>
+                                                    {{readonly this.dateValue}}
+                                                </span></span>
+                                            <div class="v-menu">
+                                                <div role="menu" class="v-menu__content theme--light "
+                                                    style="min-width: 290px; top: 12px; left: 0px; transform-origin: left top 0px; z-index: 0; display: none;">
+                                                </div>
+                                            </div> 
+                                        </div>
         </dp.Trigger>
         <dp.Content class="dropdown-menu">
             {{#if (has-block)}}

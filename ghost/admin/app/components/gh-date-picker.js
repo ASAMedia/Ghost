@@ -1,146 +1,229 @@
-import Component from '@glimmer/component';
+import Component from '@ember/component';
 import moment from 'moment-timezone';
-import {action} from '@ember/object';
-import {isBlank} from '@ember/utils';
-import {tracked} from '@glimmer/tracking';
+import {action, computed} from '@ember/object';
+import {isBlank, isEmpty} from '@ember/utils';
+import {or, reads} from '@ember/object/computed';
+import {inject as service} from '@ember/service';
 
-export class DateError extends Error {
-    constructor(msgOrObj) {
-        if (typeof msgOrObj === 'string') {
-            super(msgOrObj);
+const DATE_FORMAT = 'DD.MM.YYYY';
+
+export default Component.extend({
+    settings: service(),
+
+    tagName: '',
+
+    date: '',
+    dateFormat: DATE_FORMAT,
+    time: '',
+    errors: null,
+    dateErrorProperty: null,
+    timeErrorProperty: null,
+    isActive: true,
+
+    _time: '',
+    _previousTime: '',
+    _minDate: null,
+    _maxDate: null,
+    _scratchDate: null,
+    _scratchDateError: null,
+
+    // actions
+    setTypedDateError() {},
+
+    blogTimezone: reads('settings.timezone'),
+    hasError: or('dateError', 'timeError'),
+
+    dateValue: computed('_date', '_scratchDate', function () {
+        if (this._scratchDate !== null) {
+            return this._scratchDate;
         } else {
-            super(msgOrObj.message);
-            Object.keys(msgOrObj).forEach((key) => {
-                if (key !== 'message') {
-                    this[key] = msgOrObj[key];
-                }
-            });
+            return moment(this._date).format(DATE_FORMAT);
         }
-    }
-}
+    }),
 
-export default class GhDatePicker extends Component {
-    @tracked error = null;
-
-    get dateFormat() {
-        return 'YYYY-MM-DD';
-    }
-
-    get minDate() {
-        return this._minMaxMoment(this.args.minDate);
-    }
-
-    get maxDate() {
-        return this._minMaxMoment(this.args.maxDate);
-    }
-
-    @action
-    setDate(dateStr) {
-        this.error = null;
-
-        if (!dateStr.match(/^\d\d\d\d-\d\d-\d\d$/)) {
-            this.error = `Date must be ${this.dateFormat}`;
-            this.args.onError?.(new DateError({
-                message: this.error,
-                date: dateStr
-            }));
-            return false;
-        }
-
-        const mDate = moment(dateStr);
-
-        if (!mDate.isValid()) {
-            this.error = 'Invalid date';
-            this.args.onError?.(new DateError({
-                message: this.error,
-                date: dateStr
-            }));
-            return false;
-        }
-
-        if (this.args.minDate && mDate.isBefore(moment(this.args.minDate))) {
-            this.error = this.args.minDateError || `Must be on or after ${moment(this.args.minDate).format(this.dateFormat)}`;
-
-            this.args.onError?.(new DateError({
-                message: this.error,
-                date: dateStr
-            }));
-            return false;
-        }
-
-        if (this.args.maxDate && mDate.isAfter(moment(this.args.maxDate))) {
-            this.error = this.args.maxDateError || `Must be on or before ${moment(this.args.maxDate).format(this.dateFormat)}`;
-            this.args.onError?.(new DateError({
-                message: this.error,
-                date: dateStr
-            }));
-            return false;
-        }
-
-        this.args.onChange?.(mDate.toDate());
-    }
-
-    @action
-    onDateSelected(datepickerEvent) {
-        if (datepickerEvent instanceof moment) {
-            this.setDate(datepickerEvent.format(this.dateFormat));
+    nameOfDay: computed('_date', '_scratchDate', function () {
+        if (this._scratchDate !== null) {
+            return this._scratchDate;
         } else {
-            this.setDate(datepickerEvent.id);
+            return moment(this._date).locale('de').format('dd');
         }
-    }
+    }),
+  
+    timezone: computed('blogTimezone', function () {
+        let blogTimezone = this.blogTimezone;
+        return moment.utc().tz(blogTimezone).format('z');
+    }),
 
-    @action
-    onDateInput(datepicker, event) {
-        const skipFocus = true;
+    dateError: computed('errors.[]', 'dateErrorProperty', '_scratchDateError', function () {
+        if (this._scratchDateError) {
+            return this._scratchDateError;
+        }
+
+        let errors = this.errors;
+        let property = this.dateErrorProperty;
+
+        if (errors && !isEmpty(errors.errorsFor(property))) {
+            return errors.errorsFor(property).get('firstObject').message;
+        }
+
+        return '';
+    }),
+
+    timeError: computed('errors.[]', 'timeErrorProperty', function () {
+        let errors = this.errors;
+        let property = this.timeErrorProperty;
+
+        if (errors && !isEmpty(errors.errorsFor(property))) {
+            return errors.errorsFor(property).get('firstObject').message;
+        }
+
+        return '';
+    }),
+
+    didReceiveAttrs() {
+        let date = this.date;
+        let minDate = this.minDate;
+        let maxDate = this.maxDate;
+        let blogTimezone = this.blogTimezone;
+
+        if (!isBlank(date)) {
+            this.set('_date', moment(date));
+        } else {
+            this.set('_date', moment().tz(blogTimezone));
+        }
+
+        // reset scratch date if the component becomes inactive
+        // (eg, PSM is closed, or save type is changed away from scheduled)
+        if (!this.isActive && this._lastIsActive) {
+            this._resetScratchDate();
+        }
+        this._lastIsActive = this.isActive;
+
+        // reset scratch date if date is changed externally
+        if ((date && date.valueOf()) !== (this._lastDate && this._lastDate.valueOf())) {
+            this._resetScratchDate();
+        }
+        this._lastDate = this.date;
+
+        // unless min/max date is at midnight moment will diable that day
+        if (minDate === 'now') {
+            this.set('_minDate', moment(moment().format(DATE_FORMAT)));
+        } else if (!isBlank(minDate)) {
+            this.set('_minDate', moment(moment(minDate).format(DATE_FORMAT)));
+        } else {
+            this.set('_minDate', null);
+        }
+
+        if (maxDate === 'now') {
+            this.set('_maxDate', moment(moment().format(DATE_FORMAT)));
+        } else if (!isBlank(maxDate)) {
+            this.set('_maxDate', moment(moment(maxDate).format(DATE_FORMAT)));
+        } else {
+            this.set('_maxDate', null);
+        }
+    },
+
+    willDestroyElement() {
+        this.setTypedDateError(null);
+    },
+
+    actions: {
+        // if date or time is set and the other property is blank set that too
+        // so that we don't get "can't be blank" errors
+        setDate(date) {
+            if (date !== this._date) {
+                this.setDate(date);
+            }
+        }
+    },
+
+    onDateInput: action(function (datepicker, event) {
+        let skipFocus = true;
         datepicker.actions.close(event, skipFocus);
+        this.set('_scratchDate', event.target.value);
+    }),
 
-        this.args.onInput?.(event);
-    }
-
-    @action
-    onDateBlur(event) {
-        const value = event.target.value;
-
-        if (!value) {
-            this.resetInputValue(event.target);
-        } else {
-            this.setDate(value);
+    onDateBlur: action(function (event) {
+        // make sure we're not doing anything just because the calendar dropdown
+        // is opened and clicked
+        if (event.target.value === moment(this._date).format('DD.MM.YYYY')) {
+            this._resetScratchDate();
+            return;
         }
 
-        this.args.onBlur?.(event);
-    }
+        if (!event.target.value) {
+            this._resetScratchDate();
+        } else {
+            this._setDate(event.target.value);
+        }
+    }),
 
-    @action
-    onDateKeydown(datepicker, event) {
+    onDateKeydown: action(function (datepicker, event) {
         if (event.key === 'Escape') {
-            event.preventDefault();
-            event.stopImmediatePropagation();
-            this.resetInputValue(event.target);
+            this._resetScratchDate();
         }
 
         if (event.key === 'Enter') {
+            this._setDate(event.target.value);
             event.preventDefault();
             event.stopImmediatePropagation();
-            this.setDate(event.target.value);
             datepicker.actions.close();
         }
 
-        this.args.onKeydown?.(event);
-    }
+        // close the dropdown and manually focus the time input if necessary
+        // so that keyboard focus behaves as expected
+        if (event.key === 'Tab' && datepicker.isOpen) {
+            datepicker.actions.close();
 
-    @action
-    resetInputValue(input) {
-        input.value = moment(this.args.value).format(this.dateFormat);
-        this.error = null;
-    }
-
-    _minMaxMoment(date) {
-        if (date === 'now') {
-            return moment(moment().format(this.dateFormat));
-        } else if (!isBlank(date)) {
-            return moment(moment(date).format(this.dateFormat));
-        } else {
-            return null;
+            // manual focus is required because the dropdown is rendered in place
+            // and the default browser behaviour will move focus to the dropdown
+            // which is then removed from the DOM making it look like focus has
+            // disappeared. Shift+Tab is fine because the DOM is not changing in
+            // that direction
+            if (!event.shiftKey && this._timeInputElem) {
+                event.preventDefault();
+                this._timeInputElem.focus();
+                this._timeInputElem.select();
+            }
         }
+
+        // capture a Ctrl/Cmd+S combo to make sure that the model value is updated
+        // before the save occurs or we abort the save if the value is invalid
+        if (event.key === 's' && (event.ctrlKey || event.metaKey)) {
+            let wasValid = this._setDate(event.target.value);
+            if (!wasValid) {
+                event.stopImmediatePropagation();
+                event.preventDefault();
+            }
+        }
+    }),
+
+    // internal methods
+
+    _resetScratchDate() {
+        this.set('_scratchDate', null);
+        this._setScratchDateError(null);
+    },
+
+    _setDate(dateStr) {
+        if (!dateStr.match(/^\d\d\d\d-\d\d-\d\d$/)) {
+            this._setScratchDateError('Invalid date format, must be YYYY-MM-DD');
+            return false;
+        }
+
+        let date = moment(dateStr, DATE_FORMAT);
+        if (!date.isValid()) {
+            this._setScratchDateError('Invalid date');
+            return false;
+        }
+
+        this.send('setDate', date.toDate());
+        this._resetScratchDate();
+        return true;
+    },
+
+    _setScratchDateError(error) {
+        this.set('_scratchDateError', error);
+        this.setTypedDateError(error);
     }
-}
+});
