@@ -1,6 +1,6 @@
 const _ = require('lodash');
 const debug = require('@tryghost/debug')('importer:roles');
-const BaseImporter = require('./base');
+const BaseImporter = require('./Base');
 const models = require('../../../../models');
 const {activate} = require('../../../../services/themes/activate');
 const {sequence} = require('@tryghost/promise');

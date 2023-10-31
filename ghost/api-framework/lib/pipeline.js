@@ -4,7 +4,7 @@ const stringify = require('json-stable-stringify');
 const errors = require('@tryghost/errors');
 const {sequence} = require('@tryghost/promise');
 
-const Frame = require('./frame');
+const Frame = require('./Frame');
 const serializers = require('./serializers');
 const validators = require('./validators');
 

@@ -1,6 +1,6 @@
 import {Meta, createQuery} from '../utils/api/hooks';
 
-export type UserRoleType = 'Owner' | 'Administrator' | 'Editor' | 'Author' | 'Contributor' | 'Planseditor' | 'Planseditor Contributor' | 'Planseditor Author' | 'Planseditor Editor';
+export type UserRoleType = 'Owner' | 'Administrator' | 'Editor' | 'Author' | 'Contributor';
 
 export type UserRole = {
     id: string;

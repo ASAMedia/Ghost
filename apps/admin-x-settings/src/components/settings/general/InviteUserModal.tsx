@@ -12,7 +12,7 @@ import {useBrowseRoles} from '../../../api/roles';
 import {useBrowseUsers} from '../../../api/users';
 import {useEffect, useRef, useState} from 'react';
 
-type RoleType = 'administrator' | 'editor' | 'author' | 'contributor' | 'planseditor' | 'planseditorEditor' | 'planseditorAuthor' | 'planseditorContributor';
+type RoleType = 'administrator' | 'editor' | 'author' | 'contributor';
 
 const InviteUserModal = NiceModal.create(() => {
     const modal = NiceModal.useModal();
@@ -144,26 +144,6 @@ const InviteUserModal = NiceModal.create(() => {
     };
 
     const roleOptions = [
-        {
-            hint: 'Planseditor',
-            label: 'Planseditor',
-            value: 'planseditor'
-        },
-        {
-            hint: 'Planseditor + Editor',
-            label: 'Planseditor Editor',
-            value: 'planseditorEditor'
-        },
-        {
-            hint: 'Planseditor + Author',
-            label: 'Planseditor Author',
-            value: 'planseditorAuthor'
-        },
-        {
-            hint: 'Planseditor + Contributor',
-            label: 'Planseditor Contributor',
-            value: 'planseditorContributor'
-        },
         {
             hint: 'Can create and edit their own posts, but cannot publish. An Editor needs to approve and publish for them.',
             label: 'Contributor',

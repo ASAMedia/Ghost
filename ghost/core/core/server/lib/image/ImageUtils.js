@@ -1,6 +1,6 @@
 const BlogIcon = require('./BlogIcon');
 const CachedImageSizeFromUrl = require('./CachedImageSizeFromUrl');
-const Gravatar = require('./gravatar');
+const Gravatar = require('./Gravatar');
 const ImageSize = require('./ImageSize');
 
 class ImageUtils {

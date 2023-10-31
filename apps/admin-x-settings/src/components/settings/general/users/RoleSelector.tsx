@@ -24,26 +24,6 @@ const RoleSelector: React.FC<{ user: User; setUserData: (user: User) => void; }>
             id='role'
             options={[
                 {
-                    hint: '+Planseditor',
-                    label: 'Planseditor',
-                    value: 'planseditor'
-                },
-                {
-                    hint: 'Planseditor + Editor',
-                    label: 'Planseditor Editor',
-                    value: 'planseditorEditor'
-                },
-                {
-                    hint: 'Planseditor + Author',
-                    label: 'Planseditor Author',
-                    value: 'planseditorAuthor'
-                },
-                {
-                    hint: 'Planseditor + Contributor',
-                    label: 'Planseditor Contributor',
-                    value: 'planseditorContributor'
-                },
-                {
                     hint: 'Can create and edit their own posts, but cannot publish. An Editor needs to approve and publish for them.',
                     label: 'Contributor',
                     value: 'contributor'

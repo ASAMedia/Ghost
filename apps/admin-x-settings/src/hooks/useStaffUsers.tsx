@@ -13,10 +13,6 @@ export type UsersHook = {
     editorUsers: User[];
     authorUsers: User[];
     contributorUsers: User[];
-    planseditorUsers: User[];
-    planseditoreditorUsers: User[];
-    planseditorauthorUsers: User[];
-    planseditorcontributorUsers: User[];
     currentUser: User|null;
     isLoading: boolean;
     hasNextPage?: boolean;
@@ -46,10 +42,6 @@ const useStaffUsers = (): UsersHook => {
     const editorUsers = useMemo(() => getUsersByRole(users, 'Editor'), [users]);
     const authorUsers = useMemo(() => getUsersByRole(users, 'Author'), [users]);
     const contributorUsers = useMemo(() => getUsersByRole(users, 'Contributor'), [users]);
-    const planseditorUsers = useMemo(() => getUsersByRole(users, 'Planseditor'), [users]);
-    const planseditoreditorUsers = useMemo(() => getUsersByRole(users, 'Planseditor Editor'), [users]);
-    const planseditorauthorUsers = useMemo(() => getUsersByRole(users, 'Planseditor Author'), [users]);
-    const planseditorcontributorUsers = useMemo(() => getUsersByRole(users, 'Planseditor Contributor'), [users]);
     const mappedInvites = useMemo(() => invites.map((invite) => {
         let role = roles?.find((r) => {
             return invite.role_id === r.id;
@@ -68,10 +60,6 @@ const useStaffUsers = (): UsersHook => {
         editorUsers,
         authorUsers,
         contributorUsers,
-        planseditorUsers,
-        planseditoreditorUsers,
-        planseditorauthorUsers,
-        planseditorcontributorUsers,
         currentUser,
         invites: mappedInvites,
         isLoading: usersLoading || invitesLoading || rolesLoading,
