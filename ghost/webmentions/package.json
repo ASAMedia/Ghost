@@ -1,6 +1,6 @@
 {
   "name": "@tryghost/webmentions",
-  "version": "5.71.0",
+  "version": "0.0.0",
   "repository": "https://github.com/TryGhost/Ghost/tree/main/packages/webmentions",
   "author": "Ghost Foundation",
   "private": true,

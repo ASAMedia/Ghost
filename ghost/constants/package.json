@@ -1,7 +1,7 @@
 {
   "name": "@tryghost/constants",
   "private": true,
-  "version": "5.71.0",
+  "version": "0.0.0",
   "author": "Ghost Foundation",
   "license": "MIT",
   "main": "index.js",

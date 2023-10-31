@@ -1,6 +1,6 @@
 {
   "name": "@tryghost/recommendations",
-  "version": "5.71.0",
+  "version": "0.0.0",
   "repository": "https://github.com/TryGhost/Ghost/tree/main/ghost/recommendations",
   "author": "Ghost Foundation",
   "private": true,
