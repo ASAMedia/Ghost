@@ -35,6 +35,7 @@ Newest npm version required!!
 yarn archive
 ```
 **Remember to discard all changes to version numbers afterwards!!!**
+
 **Else it will completly destroy your build/dev environment!!!**
 
 https://ghost.org/docs/ghost-cli/#ghost-install
