@@ -1,6 +1,6 @@
 const debug = require('@tryghost/debug')('importer:users');
 const _ = require('lodash');
-const BaseImporter = require('./Base');
+const BaseImporter = require('./base');
 const models = require('../../../../models');
 const limitService = require('../../../../services/limits');
 
