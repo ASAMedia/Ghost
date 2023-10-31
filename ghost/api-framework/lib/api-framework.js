@@ -8,7 +8,7 @@ module.exports = {
     },
 
     get Frame() {
-        return require('./Frame');
+        return require('./frame');
     },
 
     get pipeline() {
