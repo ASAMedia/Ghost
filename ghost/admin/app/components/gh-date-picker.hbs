@@ -1,12 +1,13 @@
 
 <div class="gh-date-picker" ...attributes>
     <PowerDatepicker
-        @selected={{@value}}
-        @center={{@value}}
-        @onSelect={{this.onDateSelected}}
+        @selected={{this._date}}
+        @center={{center}}
+        {{!-- {{this._date}} --}}
+        @onCenterChange={{action (mut center) value="date"}}
+        @onSelect={{action "setDate" value="date"}}
         @renderInPlace={{true}}
-        @disabled={{@disabled}}
-        as |dp|
+        @disabled={{this.disabled}} as |dp|
     >
         <dp.Trigger @tabindex="-1" data-test-date-picker-trigger>
               <div class="date-select {{if this.dateError "error"}}"> <span
