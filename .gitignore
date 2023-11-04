@@ -166,3 +166,4 @@ tsconfig.tsbuildinfo
 /apps/admin-x-settings/test-results/
 /apps/admin-x-settings/playwright-report/
 /apps/admin-x-settings/playwright/.cache/
+ghost/core/config.development.json
