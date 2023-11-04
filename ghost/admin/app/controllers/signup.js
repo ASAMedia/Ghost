@@ -55,7 +55,7 @@ export default class SignupController extends Controller {
         try {
             yield this.signupDetails.validate();
             yield this._completeInvitation();
-
+            console.log('Made it!!!');
             try {
                 yield this._authenticateWithPassword();
             } catch (error) {

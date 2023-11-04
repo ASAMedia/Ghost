@@ -35,6 +35,20 @@ export default class Footer extends Component {
         });
     }
 
+    @action
+    transitionToOrRefreshSite() {
+        let {currentRouteName} = this.router;
+        if (currentRouteName === 'site') {
+            getOwner(this).lookup(`route:${currentRouteName}`).refresh();
+        } else {
+            if (this.session.user.isContributor) {
+                this.router.transitionTo('posts');
+            } else {
+                this.router.transitionTo('site');
+            }
+        }
+    }
+
     get hasThemeErrors() {
         const errors = this.themeManagement.activeTheme && this.themeManagement.activeTheme.gscanErrors;
         if (!errors) {

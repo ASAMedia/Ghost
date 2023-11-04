@@ -10,8 +10,8 @@ export default AuthenticatedRoute.extend(CurrentUserSettings, {
     vpModel: null,
     beforeModel() {
         this._super(...arguments);
-        this.transitionAuthor(this.session.user);
-        this.transitionEditor(this.session.user);
+        //this.transitionAuthor(this.session.user);
+        //this.transitionEditor(this.session.user);
     },
     async model(params) {
         await this.calculateVpModel(params);

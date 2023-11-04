@@ -332,8 +332,8 @@ module.exports.extendModel = function extendModel(Post, Posts, ghostBookshelf) {
                     });
             }
 
-            isContributor = loadedPermissions.user && _.some(loadedPermissions.user.roles, {name: 'Contributor'});
-            isAuthor = loadedPermissions.user && _.some(loadedPermissions.user.roles, {name: 'Author'});
+            isContributor = loadedPermissions.user && (_.some(loadedPermissions.user.roles, {name: 'Contributor'}) || _.some(loadedPermissions.user.roles, {name: 'Planseditor Contributor'}));
+            isAuthor = loadedPermissions.user && (_.some(loadedPermissions.user.roles, {name: 'Author'}) || _.some(loadedPermissions.user.roles, {name: 'Planseditor Author'}));
             isEdit = (action === 'edit');
             isAdd = (action === 'add');
             isDestroy = (action === 'destroy');

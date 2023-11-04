@@ -1490,10 +1490,10 @@ Post = ghostBookshelf.Model.extend({
             return postModel.get('status') === 'draft';
         }
 
-        isContributor = loadedPermissions.user && _.some(loadedPermissions.user.roles, {name: 'Contributor'});
+        isContributor = loadedPermissions.user && (_.some(loadedPermissions.user.roles, {name: 'Contributor'}) || _.some(loadedPermissions.user.roles, {name: 'Planseditor Contributor'}));
         isOwner = loadedPermissions.user && _.some(loadedPermissions.user.roles, {name: 'Owner'});
         isAdmin = loadedPermissions.user && _.some(loadedPermissions.user.roles, {name: 'Administrator'});
-        isEditor = loadedPermissions.user && _.some(loadedPermissions.user.roles, {name: 'Editor'});
+        isEditor = loadedPermissions.user && (_.some(loadedPermissions.user.roles, {name: 'Editor'}) || _.some(loadedPermissions.user.roles, {name: 'Planseditor Editor'}));
         isIntegration = loadedPermissions.apiKey && _.some(loadedPermissions.apiKey.roles, {name: 'Admin Integration'});
 
         isEdit = (action === 'edit');

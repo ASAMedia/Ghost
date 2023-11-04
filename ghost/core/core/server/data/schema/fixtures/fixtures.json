@@ -93,11 +93,11 @@
                 },
                 {
                     "name": "Planseditor Author",
-                    "description": "Plans Editor Contributor"
+                    "description": "Plans Editor Editor"
                 },
                 {
                     "name": "Planseditor Editor",
-                    "description": "Plans Editor Contributor"
+                    "description": "Plans Editor Editor"
                 },
                 {
                     "name": "Owner",
@@ -963,6 +963,7 @@
                 },
                 "Contributor": {
                     "post": ["browse", "read", "add"],
+                    "product": ["browse", "read"],
                     "setting": ["browse", "read"],
                     "slug": "all",
                     "tag": ["browse", "read"],
@@ -977,10 +978,13 @@
                 },
                 "Planseditor": {
                     "setting": ["browse", "read"],
-                    "user": ["read"]
+                    "user": ["read"],
+                    "post": ["browse", "read", "add"],
+                    "product": ["browse", "read"]
                 },
                 "Planseditor Contributor": {
                     "post": ["browse", "read", "add"],
+                    "product": ["browse", "read"],
                     "setting": ["browse", "read"],
                     "slug": "all",
                     "tag": ["browse", "read"],
