@@ -25,6 +25,7 @@ jobs:
       - run: yarn global add knex-migrator ember-cli
       - run: yarn setup
       - run: yarn build
+      - run: yarn archive
       - name: Upload binaries to release
         uses: svenstaro/upload-release-action@v2
         with:
