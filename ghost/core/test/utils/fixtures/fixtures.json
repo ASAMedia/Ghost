@@ -1123,6 +1123,7 @@
                 },
                 "Contributor": {
                     "post": ["browse", "read", "add"],
+                    "product": ["browse", "read"],
                     "setting": ["browse", "read"],
                     "slug": "all",
                     "tag": ["browse", "read"],
@@ -1133,6 +1134,63 @@
                     "email": "read",
                     "snippet": ["browse", "read"],
                     "collection": ["browse", "read"],
+                    "recommendation": ["browse", "read"]
+                },
+                "Planseditor": {
+                    "setting": ["browse", "read"],
+                    "user": ["read"],
+                    "post": ["browse", "read", "add"],
+                    "product": ["browse", "read"]
+                },
+                "Planseditor Contributor": {
+                    "post": ["browse", "read", "add"],
+                    "product": ["browse", "read"],
+                    "setting": ["browse", "read"],
+                    "slug": "all",
+                    "tag": ["browse", "read"],
+                    "user": ["browse", "read"],
+                    "role": ["browse"],
+                    "theme": ["browse"],
+                    "email_preview": "read",
+                    "email": "read",
+                    "snippet": ["browse", "read"],
+                    "collection": ["browse", "read"],
+                    "recommendation": ["browse", "read"]
+                },
+                "Planseditor Author": {
+                    "post": ["browse", "read", "add"],
+                    "setting": ["browse", "read"],
+                    "slug": "all",
+                    "tag": ["browse", "read", "add"],
+                    "user": ["browse", "read"],
+                    "role": ["browse"],
+                    "theme": ["browse", "readActive"],
+                    "email_preview": "read",
+                    "email": "read",
+                    "snippet": ["browse", "read"],
+                    "label": ["browse", "read"],
+                    "product": ["browse", "read"],
+                    "newsletter": ["browse", "read"],
+                    "collection": ["browse", "read", "add"],
+                    "recommendation": ["browse", "read"]
+                },
+                "Planseditor Editor": {
+                    "notification": "all",
+                    "post": "all",
+                    "setting": ["browse", "read"],
+                    "slug": "all",
+                    "tag": "all",
+                    "user": "all",
+                    "role": "all",
+                    "invite": "all",
+                    "theme": ["browse", "readActive"],
+                    "email_preview": "all",
+                    "email": "all",
+                    "snippet": "all",
+                    "label": ["browse", "read"],
+                    "product": ["browse", "read"],
+                    "newsletter": ["browse", "read"],
+                    "collection": "all",
                     "recommendation": ["browse", "read"]
                 }
             }
