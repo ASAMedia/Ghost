@@ -91,7 +91,7 @@ Role = ghostBookshelf.Model.extend({
             hasUserPermission = roleModelOrId && _.includes(checkAgainst, roleModel.get('name'));
         }
 
-        if (action  && loadedPermissions.apiKey) {
+        if (action === 'assign' && loadedPermissions.apiKey) {
             // apiKey cannot 'assign' the 'Owner' role
             if (roleModel.get('name') === 'Owner') {
                 return Promise.reject(new errors.NoPermissionError({
