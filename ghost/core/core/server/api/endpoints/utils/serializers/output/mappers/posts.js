@@ -77,6 +77,7 @@ module.exports = async (model, frame, options = {}) => {
     if (utils.isContentAPI(frame)) {
         date.forPost(jsonModel);
         gating.forPost(jsonModel, frame);
+
         if (jsonModel.access) {
             if (commentsService?.api?.enabled !== 'off') {
                 jsonModel.comments = true;
@@ -87,6 +88,10 @@ module.exports = async (model, frame, options = {}) => {
             jsonModel.comments = false;
         }
 
+        // Strip any source formats
+        delete jsonModel.mobiledoc;
+        delete jsonModel.lexical;
+        
         // Add  outbound link tags
         if (labs.isSet('outboundLinkTagging')) {
             // Only add it in the flag! Without the flag we only add it to emails.
