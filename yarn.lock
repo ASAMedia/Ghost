@@ -7318,20 +7318,6 @@
     lodash "^4.17.21"
     luxon "^3.0.0"
 
-"@tryghost/kg-default-nodes@0.2.9":
-  version "0.2.9"
-  resolved "https://registry.yarnpkg.com/@tryghost/kg-default-nodes/-/kg-default-nodes-0.2.9.tgz#405d7018d2d79f356e8bd5df7eb5e73d573c771d"
-  integrity sha512-P48wfqPPgpj/dQ6IxvHh6SUoZDiPkuUrTF7me9Xc80ZrtSZlFJAMeks7gEMs5OhoH4WEzp9Hf7G02rphZscJQQ==
-  dependencies:
-    "@lexical/rich-text" "^0.12.2"
-    "@tryghost/kg-clean-basic-html" "^3.0.41"
-    "@tryghost/kg-markdown-html-renderer" "^6.0.15"
-    html-minifier "^4.0.0"
-    jsdom "^22.0.0"
-    lexical "^0.12.2"
-    lodash "^4.17.21"
-    luxon "^3.3.0"
-
 "@tryghost/kg-default-nodes@^0.2.9":
   version "0.2.10"
   resolved "https://registry.yarnpkg.com/@tryghost/kg-default-nodes/-/kg-default-nodes-0.2.10.tgz#0dc32a91131fbcaa97ca6baf1df76fc3f34652a3"
