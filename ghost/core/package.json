@@ -187,7 +187,7 @@
     "ghost-storage-base": "1.0.0",
     "glob": "8.1.0",
     "got": "11.8.6",
-    "gscan": "4.40.0",
+    "gscan": "github:ASAMedia/gscan", 
     "human-number": "2.0.4",
     "image-size": "1.0.2",
     "intl": "1.2.5",
@@ -261,7 +261,8 @@
     "@tryghost/errors": "1.2.26",
     "@tryghost/logging": "2.4.8",
     "moment": "2.24.0",
-    "moment-timezone": "0.5.23"
+    "moment-timezone": "0.5.23",
+    "gscan": "github:ASAMedia/gscan"
   },
   "nx": {
     "targets": {
