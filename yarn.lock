@@ -16449,7 +16449,7 @@ ember-power-calendar-moment@^0.3.0:
     ember-cli-babel "^7.26.11"
     ember-cli-htmlbars "^6.2.0"
 
-ember-power-calendar@^0.20.2:
+ember-power-calendar@0.20.2:
   version "0.20.2"
   resolved "https://registry.yarnpkg.com/ember-power-calendar/-/ember-power-calendar-0.20.2.tgz#3095d03af06abde3aaa4ef97317e3368d8cfaa2a"
   integrity sha512-R+gC7xwsX8egLk+j0pufLcUuO0xlKtBhDOar04C5cU9fu4LzT2au5hr178MK3BT8dIENDZUAPcZqglmTPs2CZw==
