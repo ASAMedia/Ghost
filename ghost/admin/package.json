@@ -108,7 +108,7 @@
     "ember-moment": "10.0.0",
     "ember-one-way-select": "4.0.1",
     "ember-power-calendar": "0.20.2",
-    "ember-power-calendar-moment": "^0.3.0",
+    "ember-power-calendar-moment": "0.3.0",
     "ember-power-datepicker": "cibernox/ember-power-datepicker#v0.11.0",
     "ember-power-select": "6.0.1",
     "ember-resolver": "8.1.0",

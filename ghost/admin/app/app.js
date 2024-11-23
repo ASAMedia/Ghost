@@ -6,6 +6,10 @@ import config from 'ghost-admin/config/environment';
 import loadInitializers from 'ember-load-initializers';
 import moment from 'moment-timezone';
 import {registerWarnHandler} from '@ember/debug';
+import { registerDateLibrary } from 'ember-power-calendar';
+import DateUtils from 'ember-power-calendar-moment';
+
+registerDateLibrary(DateUtils);
 
 moment.updateLocale('de', {
     relativeTime: {
